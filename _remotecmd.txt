@@ -1,0 +1,1 @@
+sed -i 's/if (!retro) return/if (!retro || !selectedIteration) return/' /opt/agile/client-new/src/pages/ProjectDetail/ProjectDetail.tsx && sed -i '/exportRetroPdf/s/retro\.id/selectedIteration.id/g' /opt/agile/client-new/src/pages/ProjectDetail/ProjectDetail.tsx && grep exportRetroPdf /opt/agile/client-new/src/pages/ProjectDetail/ProjectDetail.tsx | head -1

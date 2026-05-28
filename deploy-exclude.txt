@@ -1,0 +1,22 @@
+# Скопируйте проект на сервер без мусора, например:
+#   rsync -av --exclude-from=deploy-exclude.txt ./ user@server:/var/www/agile-workspace/
+#
+.git/
+.github/
+**/__pycache__/
+**/*.pyc
+.venv/
+venv/
+client-new/node_modules/
+client-new/dist/
+client-new/playwright-report/
+client-new/test-results/
+*.log
+.env
+.env.*
+!.env.example
+ssl/
+backups/*.sql
+backups/*.sql.gz
+# Дубликат старого дерева — в Docker не используется
+app-new/
