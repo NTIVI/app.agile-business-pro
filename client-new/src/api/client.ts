@@ -19,10 +19,10 @@ export function resetAuthRedirectGate(): void {
 
 function scheduleAuthRedirect(): void {
   if (typeof window === 'undefined') return;
-  if (window.location.pathname === '/login') return;
+  if (window.location.hash.startsWith('#/login')) return;
   if (authRedirectScheduled) return;
   authRedirectScheduled = true;
-  window.location.replace('/login');
+  window.location.replace('/#/login');
 }
 
 // Автоматически ставим Content-Type: application/json только для не-FormData

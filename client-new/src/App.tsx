@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from './store/hooks';
 import { fetchMe, setFired } from './store/slices/authSlice';
 import Layout from './components/Layout/Layout';
@@ -79,7 +79,7 @@ export default function App() {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (window.location.pathname !== '/login') {
+    if (window.location.hash !== '#/login') {
       dispatch(fetchMe());
     } else {
       dispatch({ type: 'auth/fetchMe/rejected' });
@@ -134,7 +134,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <NotificationToast />
       <div ref={overlayRef} className="theme-transition-overlay" />
       <Routes>
@@ -160,6 +160,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
