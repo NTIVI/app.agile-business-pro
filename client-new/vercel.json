@@ -9,7 +9,7 @@
       "destination": "https://app-agile-business-pro.onrender.com/ws/:path*"
     },
     {
-      "source": "/((?!api|ws|assets|favicon.ico|index.html|.*\\.).*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]
