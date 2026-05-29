@@ -131,7 +131,12 @@ class Settings(BaseSettings):
             s = str(item).strip().rstrip("/")
             if s:
                 out.append(s)
+
+                    if "https://app-agile-business-pro.vercel.app" not in out:
+            out.append("https://app-agile-business-pro.vercel.app")
         return out
+
+                
 
     @field_validator("SECRET_KEY")
     @classmethod
