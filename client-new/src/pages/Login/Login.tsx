@@ -216,7 +216,7 @@ export default function LoginPage() {
             )}
 
             <input
-              type="email"
+              type="text"
               placeholder={lang.auth.email}
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
