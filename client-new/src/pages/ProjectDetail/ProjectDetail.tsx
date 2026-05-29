@@ -1151,8 +1151,11 @@ export default function ProjectDetailPage() {
   // Chat
   const loadChatMessages = useCallback(async (iid: string) => { setChatLoading(true); try { const { data } = await api.get(`/chat/${iid}/messages?limit=100`); setChatMessages(data); } catch {} setChatLoading(false); }, []);
   const connectWs = useCallback((iid: string) => {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${proto}://${location.host}/ws/chat/${iid}`);
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const wsUrl = isLocal
+      ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/chat/${iid}`
+      : `wss://app-agile-business-pro.onrender.com/ws/chat/${iid}`;
+    const ws = new WebSocket(wsUrl);
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
       if (msg.type === 'message') {

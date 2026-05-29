@@ -39,6 +39,6 @@ COPY seed_fullstack.py seed_shop_items.py _parsed_blocks.json ./
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD curl -sf http://localhost:8000/api/health || exit 1
+    CMD curl -sf http://localhost:${PORT:-8000}/api/health || exit 1
 
-CMD ["sh", "-c", "alembic upgrade head && exec su -s /bin/sh appuser -c 'uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WORKERS:-1}'"]
+CMD ["sh", "-c", "alembic upgrade head && exec su -s /bin/sh appuser -c 'uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WORKERS:-1}'"]
