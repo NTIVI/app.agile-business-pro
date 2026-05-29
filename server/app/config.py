@@ -132,8 +132,8 @@ class Settings(BaseSettings):
             if s:
                 out.append(s)
 
-       if "https://app-agile-business-pro.vercel.app" not in out:
-                out.append("https://app-agile-business-pro.vercel.app")
+        if "https://app-agile-business-pro.vercel.app" not in out:
+            out.append("https://app-agile-business-pro.vercel.app")
         return out
 
                 
@@ -149,7 +149,7 @@ class Settings(BaseSettings):
             return "dev-insecure-secret-min-32-chars-do-not-use-in-prod"
         raise ValueError("SECRET_KEY обязателен в продакшне. Задайте переменную окружения.")
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 settings = Settings()
