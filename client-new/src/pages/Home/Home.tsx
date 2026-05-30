@@ -8,6 +8,8 @@ import { CardSkeleton } from '../../components/Skeleton/Skeleton';
 import type { Event, Notification as NotifType } from '../../types';
 import styles from './Home.module.css';
 
+import OwnerDashboard from '../OwnerDashboard/OwnerDashboard';
+
 interface DashboardData {
   completed_week: number;
   active_tasks: number;
@@ -22,6 +24,10 @@ export default function HomePage() {
   const { user } = useAppSelector(s => s.auth);
   const { language } = useAppSelector(s => s.ui);
   const lang = t(language);
+
+  if (user?.role === 'owner') {
+    return <OwnerDashboard />;
+  }
 
   const [events, setEvents] = useState<Event[]>([]);
   const [recentNotifs, setRecentNotifs] = useState<NotifType[]>([]);
@@ -130,7 +136,7 @@ export default function HomePage() {
         </div>
 
         {/* Советы (не показываем владельцу на главной «Моя компания») */}
-        {user?.role !== 'owner' && tips.length > 0 && (
+        {tips.length > 0 && (
           <div className="card">
             <h3>{lang.dashboard.tips}</h3>
             <div className={styles.tipsList}>
@@ -158,7 +164,7 @@ export default function HomePage() {
         )}
 
         {/* Последние обновления (не показываем владельцу на главной «Моя компания») */}
-        {user?.role !== 'owner' && (
+        {true && (
           <div className="card">
             <h3>{lang.dashboard.recentUpdates}</h3>
             <div className={styles.updates}>
