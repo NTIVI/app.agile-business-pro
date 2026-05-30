@@ -187,4 +187,60 @@ export const gamificationApi = {
     api.put(`/gamification/access/${encodeURIComponent(userId)}`, { section_keys: sectionKeys }),
   getAccess: (userId: string) =>
     api.get<SectionAccess>(`/gamification/access/${encodeURIComponent(userId)}`),
+
+  // KPI Manager & Drops
+  getActiveDrops: () =>
+    api.get<KPIDrop[]>('/gamification/kpi/drops/active'),
+  submitPerformanceReview: (data: PerformanceReviewCreate) =>
+    api.post<PerformanceReview>('/gamification/kpi/reviews', data),
+  getManagerKPIDetails: () =>
+    api.get<ManagerKPIDetails>('/gamification/kpi/manager/details'),
+  simulateKPIDrop: (data: { kpi_type: string; drop_value: number; employee_id?: string }) =>
+    api.post<any>(`/gamification/kpi/drops/simulate?kpi_type=${encodeURIComponent(data.kpi_type)}&drop_value=${data.drop_value}${data.employee_id ? `&employee_id=${encodeURIComponent(data.employee_id)}` : ''}`),
 };
+
+export interface KPIDrop {
+  id: string;
+  employee_id: string;
+  employee_name: string | null;
+  kpi_type: string;
+  drop_value: number;
+  drop_date: string;
+  resolved: boolean;
+  notification_sent: boolean;
+}
+
+export interface PerformanceReviewCreate {
+  drop_id?: string;
+  kpi_type: string;
+  reason: string;
+  action: string;
+  comment?: string;
+}
+
+export interface PerformanceReview {
+  id: string;
+  drop_id: string | null;
+  manager_id: string;
+  manager_name: string | null;
+  review_date: string;
+  kpi_type: string;
+  reason: string;
+  action: string;
+  comment: string | null;
+  reaction_days: number | null;
+  is_overtime: boolean;
+  created_at: string;
+}
+
+export interface ManagerKPIDetails {
+  manager_id: string;
+  current_kpi2: number | null;
+  reviews_count: number;
+  total_days: number;
+  overtime_reviews_count: number;
+  total_overtime_percent: number;
+  active_drops: KPIDrop[];
+  recent_reviews: PerformanceReview[];
+}
+

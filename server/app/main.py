@@ -108,7 +108,35 @@ async def lifespan(app: FastAPI):
                 db.add(admin_user)
                 await db.commit()
                 logger.info("Admin account seeded: %s", settings.ADMIN_SEED_EMAIL)
+    # Запуск периодического планировщика KPI (cron задач)
+    import asyncio
+    
+    async def kpi_cron_scheduler():
+        logger.info("KPI Cron Scheduler started")
+        # Даем бэкенду время на полный запуск
+        await asyncio.sleep(10)
+        while True:
+            try:
+                async with async_session() as db:
+                    from app.api.gamification import run_kpi_cron_jobs
+                    await run_kpi_cron_jobs(db)
+                logger.info("KPI Cron Jobs executed successfully")
+            except Exception as e:
+                logger.error("Error in KPI Cron Scheduler: %s", e)
+            # Запуск раз в час
+            await asyncio.sleep(3600)
+            
+    kpi_task = asyncio.create_task(kpi_cron_scheduler())
+
     yield
+
+    # Мягкое завершение фоновой задачи KPI
+    kpi_task.cancel()
+    try:
+        await kpi_task
+    except asyncio.CancelledError:
+        pass
+        
     # Shutdown: close Elasticsearch client
     from app.services.search import close_es
     await close_es()

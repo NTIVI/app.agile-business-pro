@@ -13,7 +13,12 @@ from app.models.notification import Notification
 from app.models.music import Playlist, PlaylistTrack
 from app.models.place import Place
 from app.models.training import TrainingCourse, TrainingTopic, TrainingContent, TrainingTask, TrainingSubmission, CourseAssignment, Hashtag, TopicProgress, topic_hashtags
-from app.models.gamification import CoinTransaction, ShopItem, ShopPurchase, TopicTestResult, UserSession, UserShopEquip
+from app.models.gamification import (
+    CoinTransaction, ShopItem, ShopPurchase, TopicTestResult, UserSession, UserShopEquip,
+    KPIDrop, PerformanceReview, ManagerKPI2Cache, KPIManagerHistory, ManagerOvertimeCounter,
+    AttentivenessLog, ManagerKPI4Points, ActionTypesWithMandatoryFields, ManagerResponsibility,
+    EmployeeKPI8Points, KPI7ManagerPoints, KPI7ReviewImpact
+)
 from app.models.application import Application, ApplicationMember, ApplicationHistory, ApplicationTask
 
 __all__ = [
@@ -34,5 +39,8 @@ __all__ = [
     "TrainingCourse", "TrainingTopic", "TrainingContent", "TrainingTask", "TrainingSubmission",
     "Hashtag", "TopicProgress",
     "CoinTransaction", "ShopItem", "ShopPurchase", "TopicTestResult", "UserSession", "UserShopEquip",
+    "KPIDrop", "PerformanceReview", "ManagerKPI2Cache", "KPIManagerHistory", "ManagerOvertimeCounter",
+    "AttentivenessLog", "ManagerKPI4Points", "ActionTypesWithMandatoryFields", "ManagerResponsibility",
+    "EmployeeKPI8Points", "KPI7ManagerPoints", "KPI7ReviewImpact",
     "Application", "ApplicationMember", "ApplicationHistory", "ApplicationTask",
 ]

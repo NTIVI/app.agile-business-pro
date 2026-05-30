@@ -139,3 +139,186 @@ class UserSession(Base):
     duration_minutes: Mapped[int] = mapped_column(Integer, default=0)
 
     user = relationship("User", foreign_keys=[user_id])
+
+
+# ===================== NEW KPI MODELS =====================
+
+class KPIDrop(Base):
+    """Падения KPI сотрудников (для KPI1 / Manager KPI1 & KPI2)"""
+    __tablename__ = "kpi_drops"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    kpi_type: Mapped[str] = mapped_column(String(10), nullable=False) # e.g., 'KPI1', 'KPI2'
+    drop_value: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
+    drop_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    notification_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    employee = relationship("User", foreign_keys=[employee_id])
+
+
+class PerformanceReview(Base):
+    """Разборы падений KPI, проведенные руководителями (Manager KPI2)"""
+    __tablename__ = "performance_reviews"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    drop_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("kpi_drops.id", ondelete="SET NULL"), nullable=True)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    review_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    kpi_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    reason: Mapped[str] = mapped_column(String(100), nullable=False)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reaction_days: Mapped[Decimal | None] = mapped_column(Numeric(4, 1), nullable=True)
+    is_overtime: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    drop = relationship("KPIDrop", foreign_keys=[drop_id])
+    manager = relationship("User", foreign_keys=[manager_id])
+
+
+class ManagerKPI2Cache(Base):
+    """Текущее кэшированное значение KPI2 для руководителей"""
+    __tablename__ = "manager_kpi2_cache"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month: Mapped[datetime] = mapped_column(DateTime, nullable=False) # первое число текущего месяца
+    current_kpi2: Mapped[Decimal | None] = mapped_column(Numeric(4, 1), nullable=True)
+    total_days: Mapped[Decimal] = mapped_column(Numeric(8, 1), default=0.0, nullable=False)
+    reviews_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    manager = relationship("User", foreign_keys=[manager_id])
+
+
+class KPIManagerHistory(Base):
+    """История финальных значений KPI для руководителей на конец месяца"""
+    __tablename__ = "kpi_manager_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month: Mapped[datetime] = mapped_column(DateTime, nullable=False) # первое число месяца
+    kpi2_value: Mapped[Decimal | None] = mapped_column(Numeric(4, 1), nullable=True)
+    reviews_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_days: Mapped[Decimal] = mapped_column(Numeric(8, 1), default=0.0, nullable=False)
+    kpi4_points: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True) # для KPI4
+    kpi7_value: Mapped[Decimal | None] = mapped_column(Numeric(4, 1), nullable=True) # для KPI7
+    calculated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    manager = relationship("User", foreign_keys=[manager_id])
+
+
+class ManagerOvertimeCounter(Base):
+    """Счетчик сверхурочных разборов для начисления процентов в KPI6 руководителей"""
+    __tablename__ = "manager_overtime_counters"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    order_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    review_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("performance_reviews.id", ondelete="CASCADE"), nullable=False)
+    percent_awarded: Mapped[int] = mapped_column(Integer, nullable=False)
+    awarded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    manager = relationship("User", foreign_keys=[manager_id])
+    review = relationship("PerformanceReview", foreign_keys=[review_id])
+
+
+class AttentivenessLog(Base):
+    """Универсальный лог попыток сохранения для контроля внимательности (KPI8 и должностной KPI4)"""
+    __tablename__ = "attentiveness_log"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    action_type: Mapped[str] = mapped_column(String(50), nullable=False) # e.g., 'kpi_review', 'idea_decision'
+    action_id: Mapped[str] = mapped_column(String(50), nullable=False) # UUID или иной ID сущности как строка
+    attempt_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    success: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_overtime: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    penalty_points: Mapped[Decimal] = mapped_column(Numeric(3, 1), default=0.0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class ManagerKPI4Points(Base):
+    """Накопленные баллы внимательности для KPI4 начальника"""
+    __tablename__ = "manager_kpi4_points"
+    __table_args__ = (UniqueConstraint("manager_id", "month", name="uq_manager_kpi4_month"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month: Mapped[datetime] = mapped_column(DateTime, nullable=False) # первое число месяца
+    total_points: Mapped[Decimal] = mapped_column(Numeric(6, 2), default=0.0, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    manager = relationship("User", foreign_keys=[manager_id])
+
+
+class ActionTypesWithMandatoryFields(Base):
+    """Администрируемый справочник типов действий с обязательными полями для внимательности"""
+    __tablename__ = "action_types_with_mandatory_fields"
+
+    code: Mapped[str] = mapped_column(String(50), primary_key=True) # e.g., 'kpi_review'
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    mandatory_fields: Mapped[str] = mapped_column(Text, nullable=False) # JSON-строка, например '["reason", "action"]'
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class ManagerResponsibility(Base):
+    """Баллы ответственности руководителя для KPI3"""
+    __tablename__ = "manager_responsibility"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    points: Mapped[Decimal] = mapped_column(Numeric(4, 1), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+    manager = relationship("User", foreign_keys=[manager_id])
+
+
+class EmployeeKPI8Points(Base):
+    """Баллы внимательности для общего KPI8 сотрудников"""
+    __tablename__ = "employee_kpi8_points"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    points: Mapped[Decimal] = mapped_column(Numeric(4, 1), nullable=False)
+    source_action_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("attentiveness_log.id", ondelete="SET NULL"), nullable=True)
+
+    employee = relationship("User", foreign_keys=[employee_id])
+    source_action = relationship("AttentivenessLog", foreign_keys=[source_action_id])
+
+
+class KPI7ManagerPoints(Base):
+    """Баллы контроля отдела KPI7 для руководителя"""
+    __tablename__ = "kpi7_manager_points"
+    __table_args__ = (UniqueConstraint("manager_id", "month", name="uq_manager_kpi7_month"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    total_points: Mapped[Decimal] = mapped_column(Numeric(6, 2), default=0.0, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    manager = relationship("User", foreign_keys=[manager_id])
+
+
+class KPI7ReviewImpact(Base):
+    """Баллы за разборы (положительные/отрицательные) для KPI7"""
+    __tablename__ = "kpi7_review_impact"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manager_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    review_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("performance_reviews.id", ondelete="CASCADE"), nullable=False)
+    points: Mapped[Decimal] = mapped_column(Numeric(4, 1), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    manager = relationship("User", foreign_keys=[manager_id])
+    review = relationship("PerformanceReview", foreign_keys=[review_id])

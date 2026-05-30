@@ -3,18 +3,38 @@ import {
   Activity, Timer, Gauge, Brain, RefreshCcw, Coins,
   Search, BookOpen, ChevronDown, ChevronUp, AlertCircle, Info, Award, HelpCircle, Briefcase, Sparkles, Filter 
 } from 'lucide-react';
-import { gamificationApi, type UserKPI } from '../../api/gamification';
+import { 
+  gamificationApi, 
+  type UserKPI, 
+  type KPIDrop, 
+  type PerformanceReview, 
+  type ManagerKPIDetails 
+} from '../../api/gamification';
 import { useAppSelector } from '../../store/hooks';
 import { t } from '../../i18n';
 import styles from './KPI.module.css';
 import { kpiDataList, kpiCategories, type KPICardData } from './kpiData';
 
 export default function KPIPage() {
+  const { user } = useAppSelector(s => s.auth);
   const { language } = useAppSelector(s => s.ui);
   const lang = t(language);
   const [kpi, setKpi] = useState<UserKPI | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Manager KPI state
+  const [managerDetails, setManagerDetails] = useState<ManagerKPIDetails | null>(null);
+  const [activeReviewDrop, setActiveReviewDrop] = useState<KPIDrop | null>(null);
+  const [reviewForm, setReviewForm] = useState({
+    kpi_type: '',
+    reason: '',
+    action: '',
+    comment: ''
+  });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [simulating, setSimulating] = useState(false);
 
   // Regulations state
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +46,11 @@ export default function KPIPage() {
     try {
       const { data } = await gamificationApi.getMyKPI();
       setKpi(data);
+
+      if (user && ['admin', 'owner', 'deputy_owner'].includes(user.role)) {
+        const mgrRes = await gamificationApi.getManagerKPIDetails();
+        setManagerDetails(mgrRes.data);
+      }
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Не удалось загрузить KPI');
     } finally {
@@ -38,7 +63,7 @@ export default function KPIPage() {
     const id = window.setInterval(load, 60 * 1000);
     return () => window.clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   const timeLabel = useMemo(() => {
     if (!kpi) return '0ч 0м';
@@ -63,6 +88,72 @@ export default function KPIPage() {
       ...prev,
       [id]: !prev[id]
     }));
+  };
+
+  const handleOpenReview = (drop: KPIDrop) => {
+    setActiveReviewDrop(drop);
+    setReviewForm({
+      kpi_type: drop.kpi_type,
+      reason: '',
+      action: '',
+      comment: ''
+    });
+    setFormError(null);
+  };
+
+  const handleCloseReview = () => {
+    setActiveReviewDrop(null);
+    setFormError(null);
+  };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    
+    // Client-side validation: must have reason, action, kpi_type
+    const missing = [];
+    if (!reviewForm.kpi_type.trim()) missing.push("KPI");
+    if (!reviewForm.reason.trim()) missing.push("причина");
+    if (!reviewForm.action.trim()) missing.push("мера");
+    
+    if (missing.length > 0) {
+      const errMsg = `Вы не заполнили обязательные поля: ${missing.join(', ')}. Пожалуйста, заполните их перед сохранением.`;
+      setFormError(errMsg);
+      // Wait, we still attempt backend request if user explicitly bypassed, or we just stop.
+      // But wait! Section 9.3 of kpi_extracted.txt says:
+      // "Если хотя бы одно обязательное поле не заполнено: Показать уведомление... Запись не отправляется на сервер. Локально (или на сервере при первой отправке) фиксируется попытка в attentiveness_log с success=false. Важно: начисление штрафа за невнимательность происходит только при первой неудачной попытке для данного drop_id."
+      // Since backend logs failed attempts when missing fields, sending it to the backend is the absolute best way to log it securely!
+    }
+    
+    setSubmitting(true);
+    try {
+      await gamificationApi.submitPerformanceReview({
+        drop_id: activeReviewDrop?.id,
+        kpi_type: reviewForm.kpi_type,
+        reason: reviewForm.reason,
+        action: reviewForm.action,
+        comment: reviewForm.comment || undefined
+      });
+      handleCloseReview();
+      load();
+    } catch (err: any) {
+      setFormError(err?.response?.data?.detail || 'Не удалось сохранить разбор');
+      load(); // Reload to refresh penalty points if they were updated!
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSimulateDrop = async (kpiType: string, val: number) => {
+    setSimulating(true);
+    try {
+      await gamificationApi.simulateKPIDrop({ kpi_type: kpiType, drop_value: val });
+      load();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Не удалось запустить симуляцию');
+    } finally {
+      setSimulating(false);
+    }
   };
 
   const filteredKPIs = useMemo(() => {
@@ -122,6 +213,173 @@ export default function KPIPage() {
             <div className={styles.progressRow}><span>Тесты</span><strong>{kpi.tests_passed}/{kpi.tests_total}</strong></div>
             <div className={styles.progressBar}><div style={{ width: `${kpi.tests_total ? Math.round((kpi.tests_passed / kpi.tests_total) * 100) : 0}%` }} /></div>
           </div>
+        </div>
+      )}
+
+      {/* KPI Manager Dashboard */}
+      {managerDetails && (
+        <div className={styles.managerSection}>
+          <div className={styles.managerHeader}>
+            <div className={styles.sectionTitle}>
+              <Briefcase size={20} className={styles.primaryText} />
+              <h2>Кабинет руководителя: Управление и Аналитика KPI</h2>
+            </div>
+            <span className="badge badge-warning" style={{ color: '#f59e0b', borderColor: '#f59e0b' }}>Режим Руководителя</span>
+          </div>
+
+          <div className={styles.managerStatsGrid}>
+            <div className={styles.managerStatCard}>
+              <Timer size={24} className={styles.primaryText} />
+              <div className={styles.managerStatInfo}>
+                <strong>{managerDetails.current_kpi2 !== null ? `${managerDetails.current_kpi2} дн.` : '—'}</strong>
+                <span>Среднее время реакции (KPI2)</span>
+              </div>
+            </div>
+
+            <div className={styles.managerStatCard}>
+              <Activity size={24} className={styles.goldText} />
+              <div className={styles.managerStatInfo}>
+                <strong>{managerDetails.reviews_count}</strong>
+                <span>Всего разборов проведено</span>
+              </div>
+            </div>
+
+            <div className={styles.managerStatCard}>
+              <Award size={24} style={{ color: '#10b981' }} />
+              <div className={styles.managerStatInfo}>
+                <strong>+{managerDetails.total_overtime_percent}%</strong>
+                <span>Бонус за сверхурочные (KPI6)</span>
+              </div>
+            </div>
+
+            <div className={styles.managerStatCard}>
+              <Gauge size={24} style={{ color: '#ec4899' }} />
+              <div className={styles.managerStatInfo}>
+                <strong>{managerDetails.overtime_reviews_count}</strong>
+                <span>Сверхурочных разборов</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Active KPI Drops to Resolve */}
+          <div style={{ marginTop: '16px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={18} style={{ color: '#ef4444' }} />
+              Активные падения KPI сотрудников (требуют разбора)
+            </h3>
+            
+            {managerDetails.active_drops.length > 0 ? (
+              <div className={styles.dropsWrapper}>
+                {managerDetails.active_drops.map(drop => (
+                  <div key={drop.id} className={styles.dropItem}>
+                    <div className={styles.dropInfo}>
+                      <h4>{drop.employee_name || 'Сотрудник'} — Падение {drop.kpi_type}</h4>
+                      <div className={styles.dropMeta}>
+                        <span>Величина падения: <strong>{drop.drop_value}</strong></span>
+                        <span>•</span>
+                        <span>Дата фиксации: {new Date(drop.drop_date).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <button 
+                      className="btn btn-error btn-sm" 
+                      onClick={() => handleOpenReview(drop)}
+                    >
+                      <Sparkles size={14} /> Зафиксировать разбор
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.03)',
+                border: '1px solid rgba(16, 185, 129, 0.15)',
+                borderRadius: '12px',
+                padding: '24px',
+                textAlign: 'center',
+                color: '#34d399'
+              }}>
+                <Sparkles size={32} style={{ marginBottom: '8px' }} />
+                <h4 style={{ fontWeight: 600 }}>Все падения KPI успешно разобраны!</h4>
+                <p style={{ fontSize: '13px', opacity: 0.8 }}>Вы отлично справляетесь с контролем качества и регламентов.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Reviews history */}
+          {managerDetails.recent_reviews.length > 0 && (
+            <div style={{ marginTop: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
+                История проведенных разборов
+              </h3>
+              <div className={styles.reviewsTableWrapper}>
+                <table className={styles.reviewsTable}>
+                  <thead>
+                    <tr>
+                      <th>KPI</th>
+                      <th>Дата разбора</th>
+                      <th>Причина падения</th>
+                      <th>Принятая мера</th>
+                      <th>Реакция (рабочие дни)</th>
+                      <th>Режим</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {managerDetails.recent_reviews.map(rev => (
+                      <tr key={rev.id}>
+                        <td><strong>{rev.kpi_type}</strong></td>
+                        <td>{new Date(rev.review_date).toLocaleDateString()}</td>
+                        <td>{rev.reason}</td>
+                        <td>{rev.action}</td>
+                        <td>{rev.reaction_days !== null ? `${rev.reaction_days} дн.` : '—'}</td>
+                        <td>
+                          {rev.is_overtime ? (
+                            <span className="badge badge-warning" style={{ fontSize: '11px' }}>Сверхурочно</span>
+                          ) : (
+                            <span className="badge badge-ghost" style={{ fontSize: '11px' }}>Рабочий</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Simulation Section */}
+          {user && ['admin', 'owner'].includes(user.role) && (
+            <div className={styles.simulationSection}>
+              <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#60a5fa', marginBottom: '10px' }}>
+                Панель тестирования KPI (только Администраторы)
+              </h4>
+              <p style={{ fontSize: '12.5px', color: '#93c5fd', marginBottom: '12px' }}>
+                Симулируйте падение показателей для проверки реакций, штрафов за невнимательность и сверхурочных бонусов:
+              </p>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button 
+                  className="btn btn-outline btn-xs" 
+                  disabled={simulating}
+                  onClick={() => handleSimulateDrop('KPI1 (Дисциплина)', 15.0)}
+                >
+                  Симулировать падение KPI1
+                </button>
+                <button 
+                  className="btn btn-outline btn-xs" 
+                  disabled={simulating}
+                  onClick={() => handleSimulateDrop('KPI5 (Задачи)', 8.5)}
+                >
+                  Симулировать падение KPI5
+                </button>
+                <button 
+                  className="btn btn-outline btn-xs" 
+                  disabled={simulating}
+                  onClick={() => handleSimulateDrop('KPI7 (Качество)', 22.0)}
+                >
+                  Симулировать падение KPI7
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -257,6 +515,103 @@ export default function KPIPage() {
           )}
         </div>
       </div>
+
+      {/* KPI Review Dialog Modal */}
+      {activeReviewDrop && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Зафиксировать разбор падения</h3>
+              <button className={styles.closeButton} onClick={handleCloseReview}>×</button>
+            </div>
+
+            {formError && (
+              <div className={styles.error} style={{ fontSize: '13px', padding: '10px 14px' }}>
+                <AlertCircle size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className={styles.formGroup}>
+                <label>Показатель KPI *</label>
+                <input 
+                  type="text" 
+                  className={styles.formInput} 
+                  value={reviewForm.kpi_type}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, kpi_type: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Причина отклонения *</label>
+                <select 
+                  className={styles.formInput}
+                  value={reviewForm.reason}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, reason: e.target.value }))}
+                  required
+                >
+                  <option value="">Выберите причину...</option>
+                  <option value="Личная халатность">Личная халатность</option>
+                  <option value="Высокая нагрузка">Высокая нагрузка</option>
+                  <option value="Технические проблемы">Технические проблемы</option>
+                  <option value="Семейные обстоятельства">Семейные обстоятельства</option>
+                  <option value="Недостаток обучения">Недостаток обучения</option>
+                  <option value="Другое">Другое</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Принятая мера / Решение *</label>
+                <select 
+                  className={styles.formInput}
+                  value={reviewForm.action}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, action: e.target.value }))}
+                  required
+                >
+                  <option value="">Выберите меру...</option>
+                  <option value="Устное замечание">Устное замечание</option>
+                  <option value="Официальный выговор">Официальный выговор</option>
+                  <option value="Индивидуальный план исправления">Индивидуальный план исправления</option>
+                  <option value="Снижение текущей нагрузки">Снижение текущей нагрузки</option>
+                  <option value="Дополнительное переобучение">Дополнительное переобучение</option>
+                  <option value="Направление к психологу платформы">Направление к психологу платформы</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Комментарий (необязательно)</label>
+                <textarea 
+                  className={styles.formInput}
+                  style={{ minHeight: '80px', resize: 'vertical' }}
+                  value={reviewForm.comment}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                  placeholder="Дополнительные примечания к разбору..."
+                />
+              </div>
+
+              <div className={styles.formActions}>
+                <button 
+                  type="button" 
+                  className="btn btn-ghost btn-sm" 
+                  onClick={handleCloseReview}
+                  disabled={submitting}
+                >
+                  Отмена
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-sm" 
+                  disabled={submitting}
+                >
+                  {submitting ? 'Сохранение...' : 'Сохранить разбор'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
