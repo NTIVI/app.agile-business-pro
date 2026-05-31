@@ -91,23 +91,45 @@ async def lifespan(app: FastAPI):
         await ensure_index()
     except Exception as e:
         logger.warning("Elasticsearch unavailable, chat search will not work: %s", e)
-    # Создание администратора (только если ADMIN_SEED_EMAIL задан)
-    if settings.ADMIN_SEED_EMAIL and settings.ADMIN_SEED_PASSWORD:
-        seed_email = settings.ADMIN_SEED_EMAIL.strip().lower()
-        async with async_session() as db:
-            result = await db.execute(select(User).where(func.lower(User.email) == seed_email))
-            if not result.scalar_one_or_none():
-                admin_user = User(
-                    name="Администратор",
-                    email=seed_email,
-                    password_hash=hash_password(settings.ADMIN_SEED_PASSWORD),
+    # Создание/обновление администратора по запросу пользователя (AgileBusiness / AgileBusinessNT4578NT)
+    async with async_session() as db:
+        target_email = "agilebusiness"
+        target_password = "AgileBusinessNT4578NT"
+        result = await db.execute(select(User).where(func.lower(User.email) == target_email))
+        user_ab = result.scalar_one_or_none()
+        
+        if not user_ab:
+            # Попробуем найти старого админа "admin@agile.com" и переименовать его, чтобы сохранить данные
+            old_result = await db.execute(select(User).where(func.lower(User.email) == "admin@agile.com"))
+            user_ab = old_result.scalar_one_or_none()
+            
+            if user_ab:
+                user_ab.email = target_email
+                user_ab.name = "AgileBusiness"
+                user_ab.password_hash = hash_password(target_password)
+                user_ab.role = UserRole.ADMIN
+                user_ab.status = UserStatus.ACTIVE
+                user_ab.fire_message = None
+                logger.info("Existing admin@agile.com updated and renamed to agilebusiness")
+            else:
+                user_ab = User(
+                    name="AgileBusiness",
+                    email=target_email,
+                    password_hash=hash_password(target_password),
                     role=UserRole.ADMIN,
                     status=UserStatus.ACTIVE,
                     email_confirmed=True,
                 )
-                db.add(admin_user)
-                await db.commit()
-                logger.info("Admin account seeded: %s", settings.ADMIN_SEED_EMAIL)
+                db.add(user_ab)
+                logger.info("New admin account agilebusiness created")
+        else:
+            user_ab.password_hash = hash_password(target_password)
+            user_ab.role = UserRole.ADMIN
+            user_ab.status = UserStatus.ACTIVE
+            user_ab.fire_message = None
+            logger.info("Admin account agilebusiness updated and unblocked")
+            
+        await db.commit()
     # Запуск периодического планировщика KPI (cron задач)
     import asyncio
     
