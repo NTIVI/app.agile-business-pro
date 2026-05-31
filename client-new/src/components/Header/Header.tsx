@@ -89,6 +89,76 @@ export default function Header() {
     if (user) dispatch(fetchCoinBalance());
   }, [dispatch, user]);
 
+  const [conferenceActive, setConferenceActive] = useState(false);
+
+  const fetchConferenceStatus = async () => {
+    try {
+      const { data } = await api.get('/conference');
+      setConferenceActive(data.active);
+    } catch (e) {
+      console.error('Failed to fetch conference status:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchConferenceStatus();
+    const interval = setInterval(fetchConferenceStatus, 10000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const handleCreateConference = async () => {
+    try {
+      await api.post('/conference');
+      setConferenceActive(true);
+      window.open('https://agile-coll.vercel.app/', '_blank');
+    } catch (e) {
+      console.error('Failed to create conference:', e);
+    }
+  };
+
+  const handleStopConference = async () => {
+    try {
+      await api.delete('/conference');
+      setConferenceActive(false);
+    } catch (e) {
+      console.error('Failed to stop conference:', e);
+    }
+  };
+
+  const handleJoinConference = () => {
+    window.open('https://agile-coll.vercel.app/', '_blank');
+  };
+
+  const isPrivileged = user && ['owner', 'admin', 'deputy_owner'].includes(user.role);
+
+  const renderConferenceButtons = () => {
+    if (!user) return null;
+    if (conferenceActive) {
+      return (
+        <div className={styles.confGroup}>
+          <button className={`btn btn-sm ${styles.joinBtn}`} onClick={handleJoinConference}>
+            Присоединиться
+          </button>
+          {isPrivileged && (
+            <button className={`btn btn-sm ${styles.stopBtn}`} onClick={handleStopConference} title="Завершить конференцию">
+              Завершить
+            </button>
+          )}
+        </div>
+      );
+    } else {
+      if (isPrivileged) {
+        return (
+          <button className={`btn btn-sm ${styles.createBtn}`} onClick={handleCreateConference}>
+            Создать конференцию
+          </button>
+        );
+      }
+    }
+    return null;
+  };
+
   if (!user) return null;
 
   return (
@@ -170,6 +240,8 @@ export default function Header() {
             </>
           )}
         </div>
+
+        {renderConferenceButtons()}
 
         {FULL_ACCESS_ROLES.includes(user.role as UserRole) && (
           <button className={`btn btn-sm btn-danger ${styles.adminBtn}`} onClick={() => navigate('/admin')}>
