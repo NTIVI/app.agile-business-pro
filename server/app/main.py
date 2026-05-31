@@ -502,3 +502,33 @@ async def readiness():
         status_code=status_code,
         content={"status": "ready", "checks": checks},
     )
+
+
+# --- Глобальное состояние конференции ---
+from fastapi import HTTPException
+from app.middleware.auth import get_current_user
+
+CONFERENCE_ACTIVE = False
+
+@app.get("/api/conference")
+async def get_conference():
+    global CONFERENCE_ACTIVE
+    return {"active": CONFERENCE_ACTIVE}
+
+@app.post("/api/conference")
+async def create_conference(user: User = Depends(get_current_user)):
+    global CONFERENCE_ACTIVE
+    user_role = user.role.value if hasattr(user.role, 'value') else user.role
+    if user_role not in ("owner", "admin", "deputy_owner"):
+        raise HTTPException(status_code=403, detail="Нет прав для создания конференции")
+    CONFERENCE_ACTIVE = True
+    return {"active": True}
+
+@app.delete("/api/conference")
+async def stop_conference(user: User = Depends(get_current_user)):
+    global CONFERENCE_ACTIVE
+    user_role = user.role.value if hasattr(user.role, 'value') else user.role
+    if user_role not in ("owner", "admin", "deputy_owner"):
+        raise HTTPException(status_code=403, detail="Нет прав для завершения конференции")
+    CONFERENCE_ACTIVE = False
+    return {"active": False}
