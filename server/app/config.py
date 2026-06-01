@@ -91,6 +91,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "https://agile-business-pro.com",
         "https://www.agile-business-pro.com",
+        "https://app.agile-business-pro.com",
+        "http://app.agile-business-pro.com",
     ]
     
     # Автоматическое создание admin-аккаунта (пустые = не создавать)
@@ -134,7 +136,13 @@ class Settings(BaseSettings):
             if s:
                 out.append(s)
 
-        for domain in ("https://app-agile-business-pro.vercel.app", "https://agile-business-pro.com", "https://www.agile-business-pro.com"):
+        for domain in (
+            "https://app-agile-business-pro.vercel.app",
+            "https://agile-business-pro.com",
+            "https://www.agile-business-pro.com",
+            "https://app.agile-business-pro.com",
+            "http://app.agile-business-pro.com",
+        ):
             if domain not in out:
                 out.append(domain)
         return out
