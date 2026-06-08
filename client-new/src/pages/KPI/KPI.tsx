@@ -8,7 +8,9 @@ import {
   type UserKPI, 
   type KPIDrop, 
   type PerformanceReview, 
-  type ManagerKPIDetails 
+  type ManagerKPIDetails,
+  type DepartmentKPIHealth,
+  type ManagerReactivity
 } from '../../api/gamification';
 import { useAppSelector } from '../../store/hooks';
 import { t } from '../../i18n';
@@ -25,6 +27,9 @@ export default function KPIPage() {
 
   // Manager KPI state
   const [managerDetails, setManagerDetails] = useState<ManagerKPIDetails | null>(null);
+  const [departmentHealth, setDepartmentHealth] = useState<DepartmentKPIHealth[] | null>(null);
+  const [managerReactivity, setManagerReactivity] = useState<ManagerReactivity[] | null>(null);
+  const [activeManagerTab, setActiveManagerTab] = useState<'drops' | 'departments' | 'managers'>('drops');
   const [activeReviewDrop, setActiveReviewDrop] = useState<KPIDrop | null>(null);
   const [reviewForm, setReviewForm] = useState({
     kpi_type: '',
@@ -50,6 +55,20 @@ export default function KPIPage() {
       if (user && ['admin', 'owner', 'deputy_owner'].includes(user.role)) {
         const mgrRes = await gamificationApi.getManagerKPIDetails();
         setManagerDetails(mgrRes.data);
+
+        try {
+          const deptRes = await gamificationApi.getDepartmentKPIHealth();
+          setDepartmentHealth(deptRes.data);
+        } catch (e) {
+          console.error("Failed to load department KPI health:", e);
+        }
+
+        try {
+          const reactRes = await gamificationApi.getManagerReactivity();
+          setManagerReactivity(reactRes.data);
+        } catch (e) {
+          console.error("Failed to load manager reactivity:", e);
+        }
       }
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Не удалось загрузить KPI');
@@ -227,157 +246,274 @@ export default function KPIPage() {
             <span className="badge badge-warning" style={{ color: '#f59e0b', borderColor: '#f59e0b' }}>Режим Руководителя</span>
           </div>
 
-          <div className={styles.managerStatsGrid}>
-            <div className={styles.managerStatCard}>
-              <Timer size={24} className={styles.primaryText} />
-              <div className={styles.managerStatInfo}>
-                <strong>{managerDetails.current_kpi2 !== null ? `${managerDetails.current_kpi2} дн.` : '—'}</strong>
-                <span>Среднее время реакции (KPI2)</span>
-              </div>
-            </div>
-
-            <div className={styles.managerStatCard}>
-              <Activity size={24} className={styles.goldText} />
-              <div className={styles.managerStatInfo}>
-                <strong>{managerDetails.reviews_count}</strong>
-                <span>Всего разборов проведено</span>
-              </div>
-            </div>
-
-            <div className={styles.managerStatCard}>
-              <Award size={24} style={{ color: '#10b981' }} />
-              <div className={styles.managerStatInfo}>
-                <strong>+{managerDetails.total_overtime_percent}%</strong>
-                <span>Бонус за сверхурочные (KPI6)</span>
-              </div>
-            </div>
-
-            <div className={styles.managerStatCard}>
-              <Gauge size={24} style={{ color: '#ec4899' }} />
-              <div className={styles.managerStatInfo}>
-                <strong>{managerDetails.overtime_reviews_count}</strong>
-                <span>Сверхурочных разборов</span>
-              </div>
-            </div>
+          <div className={styles.managerTabs}>
+            <button 
+              className={`${styles.managerTab} ${activeManagerTab === 'drops' ? styles.managerTabActive : ''}`}
+              onClick={() => setActiveManagerTab('drops')}
+            >
+              Падения и Разборы
+            </button>
+            <button 
+              className={`${styles.managerTab} ${activeManagerTab === 'departments' ? styles.managerTabActive : ''}`}
+              onClick={() => setActiveManagerTab('departments')}
+            >
+              Здоровье Отделов
+            </button>
+            <button 
+              className={`${styles.managerTab} ${activeManagerTab === 'managers' ? styles.managerTabActive : ''}`}
+              onClick={() => setActiveManagerTab('managers')}
+            >
+              Дисциплина Руководителей
+            </button>
           </div>
 
-          {/* Active KPI Drops to Resolve */}
-          <div style={{ marginTop: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={18} style={{ color: '#ef4444' }} />
-              Активные падения KPI сотрудников (требуют разбора)
-            </h3>
-            
-            {managerDetails.active_drops.length > 0 ? (
-              <div className={styles.dropsWrapper}>
-                {managerDetails.active_drops.map(drop => (
-                  <div key={drop.id} className={styles.dropItem}>
-                    <div className={styles.dropInfo}>
-                      <h4>{drop.employee_name || 'Сотрудник'} — Падение {drop.kpi_type}</h4>
-                      <div className={styles.dropMeta}>
-                        <span>Величина падения: <strong>{drop.drop_value}</strong></span>
-                        <span>•</span>
-                        <span>Дата фиксации: {new Date(drop.drop_date).toLocaleString()}</span>
+          {activeManagerTab === 'drops' && (
+            <>
+              <div className={styles.managerStatsGrid}>
+                <div className={styles.managerStatCard}>
+                  <Timer size={24} className={styles.primaryText} />
+                  <div className={styles.managerStatInfo}>
+                    <strong>{managerDetails.current_kpi2 !== null ? `${managerDetails.current_kpi2} дн.` : '—'}</strong>
+                    <span>Среднее время реакции (KPI2)</span>
+                  </div>
+                </div>
+
+                <div className={styles.managerStatCard}>
+                  <Activity size={24} className={styles.goldText} />
+                  <div className={styles.managerStatInfo}>
+                    <strong>{managerDetails.reviews_count}</strong>
+                    <span>Всего разборов проведено</span>
+                  </div>
+                </div>
+
+                <div className={styles.managerStatCard}>
+                  <Award size={24} style={{ color: '#10b981' }} />
+                  <div className={styles.managerStatInfo}>
+                    <strong>+{managerDetails.total_overtime_percent}%</strong>
+                    <span>Бонус за сверхурочные (KPI6)</span>
+                  </div>
+                </div>
+
+                <div className={styles.managerStatCard}>
+                  <Gauge size={24} style={{ color: '#ec4899' }} />
+                  <div className={styles.managerStatInfo}>
+                    <strong>{managerDetails.overtime_reviews_count}</strong>
+                    <span>Сверхурочных разборов</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active KPI Drops to Resolve */}
+              <div style={{ marginTop: '16px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertCircle size={18} style={{ color: '#ef4444' }} />
+                  Активные падения KPI сотрудников (требуют разбора)
+                </h3>
+                
+                {managerDetails.active_drops.length > 0 ? (
+                  <div className={styles.dropsWrapper}>
+                    {managerDetails.active_drops.map(drop => (
+                      <div key={drop.id} className={styles.dropItem}>
+                        <div className={styles.dropInfo}>
+                          <h4>{drop.employee_name || 'Сотрудник'} — Падение {drop.kpi_type}</h4>
+                          <div className={styles.dropMeta}>
+                            <span>Величина падения: <strong>{drop.drop_value}</strong></span>
+                            <span>•</span>
+                            <span>Дата фиксации: {new Date(drop.drop_date).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <button 
+                          className="btn btn-error btn-sm" 
+                          onClick={() => handleOpenReview(drop)}
+                        >
+                          <Sparkles size={14} /> Зафиксировать разбор
+                        </button>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    background: 'rgba(16, 185, 129, 0.03)',
+                    border: '1px solid rgba(16, 185, 129, 0.15)',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    textAlign: 'center',
+                    color: '#34d399'
+                  }}>
+                    <Sparkles size={32} style={{ marginBottom: '8px' }} />
+                    <h4 style={{ fontWeight: 600 }}>Все падения KPI успешно разобраны!</h4>
+                    <p style={{ fontSize: '13px', opacity: 0.8 }}>Вы отлично справляетесь с контролем качества и регламентов.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Reviews history */}
+              {managerDetails.recent_reviews.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
+                    История проведенных разборов
+                  </h3>
+                  <div className={styles.reviewsTableWrapper}>
+                    <table className={styles.reviewsTable}>
+                      <thead>
+                        <tr>
+                          <th>KPI</th>
+                          <th>Дата разбора</th>
+                          <th>Причина падения</th>
+                          <th>Принятая мера</th>
+                          <th>Реакция (рабочие дни)</th>
+                          <th>Режим</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {managerDetails.recent_reviews.map(rev => (
+                          <tr key={rev.id}>
+                            <td><strong>{rev.kpi_type}</strong></td>
+                            <td>{new Date(rev.review_date).toLocaleDateString()}</td>
+                            <td>{rev.reason}</td>
+                            <td>{rev.action}</td>
+                            <td>{rev.reaction_days !== null ? `${rev.reaction_days} дн.` : '—'}</td>
+                            <td>
+                              {rev.is_overtime ? (
+                                <span className="badge badge-warning" style={{ fontSize: '11px' }}>Сверхурочно</span>
+                              ) : (
+                                <span className="badge badge-ghost" style={{ fontSize: '11px' }}>Рабочий</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Simulation Section */}
+              {user && ['admin', 'owner'].includes(user.role) && (
+                <div className={styles.simulationSection}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#60a5fa', marginBottom: '10px' }}>
+                    Панель тестирования KPI (только Администраторы)
+                  </h4>
+                  <p style={{ fontSize: '12.5px', color: '#93c5fd', marginBottom: '12px' }}>
+                    Симулируйте падение показателей для проверки реакций, штрафов за невнимательность и сверхурочных бонусов:
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button 
-                      className="btn btn-error btn-sm" 
-                      onClick={() => handleOpenReview(drop)}
+                      className="btn btn-outline btn-xs" 
+                      disabled={simulating}
+                      onClick={() => handleSimulateDrop('KPI1 (Дисциплина)', 15.0)}
                     >
-                      <Sparkles size={14} /> Зафиксировать разбор
+                      Симулировать падение KPI1
+                    </button>
+                    <button 
+                      className="btn btn-outline btn-xs" 
+                      disabled={simulating}
+                      onClick={() => handleSimulateDrop('KPI5 (Задачи)', 8.5)}
+                    >
+                      Симулировать падение KPI5
+                    </button>
+                    <button 
+                      className="btn btn-outline btn-xs" 
+                      disabled={simulating}
+                      onClick={() => handleSimulateDrop('KPI7 (Качество)', 22.0)}
+                    >
+                      Симулировать падение KPI7
                     </button>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{
-                background: 'rgba(16, 185, 129, 0.03)',
-                border: '1px solid rgba(16, 185, 129, 0.15)',
-                borderRadius: '12px',
-                padding: '24px',
-                textAlign: 'center',
-                color: '#34d399'
-              }}>
-                <Sparkles size={32} style={{ marginBottom: '8px' }} />
-                <h4 style={{ fontWeight: 600 }}>Все падения KPI успешно разобраны!</h4>
-                <p style={{ fontSize: '13px', opacity: 0.8 }}>Вы отлично справляетесь с контролем качества и регламентов.</p>
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </>
+          )}
 
-          {/* Recent Reviews history */}
-          {managerDetails.recent_reviews.length > 0 && (
-            <div style={{ marginTop: '20px' }}>
+          {activeManagerTab === 'departments' && (
+            <div style={{ marginTop: '16px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
-                История проведенных разборов
+                Показатели здоровья KPI по отделам
               </h3>
-              <div className={styles.reviewsTableWrapper}>
-                <table className={styles.reviewsTable}>
-                  <thead>
-                    <tr>
-                      <th>KPI</th>
-                      <th>Дата разбора</th>
-                      <th>Причина падения</th>
-                      <th>Принятая мера</th>
-                      <th>Реакция (рабочие дни)</th>
-                      <th>Режим</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {managerDetails.recent_reviews.map(rev => (
-                      <tr key={rev.id}>
-                        <td><strong>{rev.kpi_type}</strong></td>
-                        <td>{new Date(rev.review_date).toLocaleDateString()}</td>
-                        <td>{rev.reason}</td>
-                        <td>{rev.action}</td>
-                        <td>{rev.reaction_days !== null ? `${rev.reaction_days} дн.` : '—'}</td>
-                        <td>
-                          {rev.is_overtime ? (
-                            <span className="badge badge-warning" style={{ fontSize: '11px' }}>Сверхурочно</span>
-                          ) : (
-                            <span className="badge badge-ghost" style={{ fontSize: '11px' }}>Рабочий</span>
-                          )}
-                        </td>
+              {departmentHealth && departmentHealth.length > 0 ? (
+                <div className={styles.reviewsTableWrapper}>
+                  <table className={styles.reviewsTable}>
+                    <thead>
+                      <tr>
+                        <th>Отдел</th>
+                        <th>Сотрудников</th>
+                        <th>KPI1 (Дедлайны)</th>
+                        <th>KPI2 (Пунктуальность)</th>
+                        <th>KPI3 (Инициативность)</th>
+                        <th>KPI4 (Сверхурочные)</th>
+                        <th>KPI5 (Качество)</th>
+                        <th>KPI8 (Внимательность)</th>
+                        <th>KPI9 (Бонусы)</th>
+                        <th>KPI10 (Ответственность)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {departmentHealth.map((dept, idx) => (
+                        <tr key={idx}>
+                          <td><strong>{dept.department_id || 'Без отдела'}</strong></td>
+                          <td>{dept.employee_count}</td>
+                          <td>{dept.avg_kpi1_deadlines !== null ? `${dept.avg_kpi1_deadlines.toFixed(1)}%` : '—'}</td>
+                          <td>{dept.avg_kpi2_punctuality !== null ? `${dept.avg_kpi2_punctuality.toFixed(1)}%` : '—'}</td>
+                          <td>{dept.avg_kpi3_initiative !== null ? `${dept.avg_kpi3_initiative.toFixed(1)}%` : '—'}</td>
+                          <td>{dept.avg_kpi4_overtime !== null ? `${dept.avg_kpi4_overtime.toFixed(1)}%` : '—'}</td>
+                          <td>{dept.avg_kpi5_quality !== null ? `${dept.avg_kpi5_quality.toFixed(1)}%` : '—'}</td>
+                          <td>{dept.avg_kpi8_attentiveness !== null ? `${dept.avg_kpi8_attentiveness.toFixed(1)}%` : '—'}</td>
+                          <td>{dept.avg_kpi9_bonus !== null ? `${dept.avg_kpi9_bonus.toFixed(1)}%` : '—'}</td>
+                          <td>{dept.avg_kpi10_responsibility !== null ? `${dept.avg_kpi10_responsibility.toFixed(1)}%` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={styles.empty}>Нет данных о здоровье отделов.</div>
+              )}
             </div>
           )}
 
-          {/* Simulation Section */}
-          {user && ['admin', 'owner'].includes(user.role) && (
-            <div className={styles.simulationSection}>
-              <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#60a5fa', marginBottom: '10px' }}>
-                Панель тестирования KPI (только Администраторы)
-              </h4>
-              <p style={{ fontSize: '12.5px', color: '#93c5fd', marginBottom: '12px' }}>
-                Симулируйте падение показателей для проверки реакций, штрафов за невнимательность и сверхурочных бонусов:
-              </p>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button 
-                  className="btn btn-outline btn-xs" 
-                  disabled={simulating}
-                  onClick={() => handleSimulateDrop('KPI1 (Дисциплина)', 15.0)}
-                >
-                  Симулировать падение KPI1
-                </button>
-                <button 
-                  className="btn btn-outline btn-xs" 
-                  disabled={simulating}
-                  onClick={() => handleSimulateDrop('KPI5 (Задачи)', 8.5)}
-                >
-                  Симулировать падение KPI5
-                </button>
-                <button 
-                  className="btn btn-outline btn-xs" 
-                  disabled={simulating}
-                  onClick={() => handleSimulateDrop('KPI7 (Качество)', 22.0)}
-                >
-                  Симулировать падение KPI7
-                </button>
-              </div>
+          {activeManagerTab === 'managers' && (
+            <div style={{ marginTop: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
+                Дисциплина и оперативность руководителей
+              </h3>
+              {managerReactivity && managerReactivity.length > 0 ? (
+                <div className={styles.reviewsTableWrapper}>
+                  <table className={styles.reviewsTable}>
+                    <thead>
+                      <tr>
+                        <th>Руководитель</th>
+                        <th>Активные падения подчинённых</th>
+                        <th>Проведено разборов</th>
+                        <th>Средняя реакция (рабочие дни)</th>
+                        <th>Manager KPI1 (Индекс реакции)</th>
+                        <th>Manager KPI3 (Ответственность)</th>
+                        <th>Manager KPI4 (Внимательность)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {managerReactivity.map(mgr => (
+                        <tr key={mgr.manager_id}>
+                          <td><strong>{mgr.manager_name}</strong></td>
+                          <td>
+                            {mgr.active_drops_count > 0 ? (
+                              <span style={{ color: '#ef4444', fontWeight: 'bold' }}>{mgr.active_drops_count}</span>
+                            ) : (
+                              <span style={{ color: '#10b981' }}>0</span>
+                            )}
+                          </td>
+                          <td>{mgr.conducted_reviews_count}</td>
+                          <td>{mgr.avg_reaction_days !== null ? `${mgr.avg_reaction_days.toFixed(1)} дн.` : '—'}</td>
+                          <td>{mgr.manager_kpi1_reaction_index !== null ? `${mgr.manager_kpi1_reaction_index.toFixed(1)}%` : '—'}</td>
+                          <td>{mgr.manager_kpi3_responsibility !== null ? `${mgr.manager_kpi3_responsibility.toFixed(1)}%` : '—'}</td>
+                          <td>{mgr.manager_kpi4_attentiveness !== null ? `${mgr.manager_kpi4_attentiveness.toFixed(1)}%` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={styles.empty}>Нет данных по руководителям.</div>
+              )}
             </div>
           )}
         </div>

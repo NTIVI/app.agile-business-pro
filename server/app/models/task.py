@@ -36,6 +36,17 @@ class Task(Base):
     )
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
+    # KPI 1 & 5 tracking fields
+    first_submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    kpi_status: Mapped[str | None] = mapped_column(String(50), nullable=True)  # in_time, overdue, rework, excused
+    has_excuse: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    excuse_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_discrepancy: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    systematic_defect: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    return_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_bonus_eligible: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

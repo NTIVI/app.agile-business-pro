@@ -16,8 +16,10 @@ from app.models.training import TrainingCourse, TrainingTopic, TrainingContent, 
 from app.models.gamification import (
     CoinTransaction, ShopItem, ShopPurchase, TopicTestResult, UserSession, UserShopEquip,
     KPIDrop, PerformanceReview, ManagerKPI2Cache, KPIManagerHistory, ManagerOvertimeCounter,
-    AttentivenessLog, ManagerKPI4Points, ActionTypesWithMandatoryFields, ManagerResponsibility,
-    EmployeeKPI8Points, KPI7ManagerPoints, KPI7ReviewImpact
+    AttendanceLog, AttentivenessLog, ManagerKPI4Points, ActionTypesWithMandatoryFields, ManagerResponsibility,
+    EmployeeKPI8Points, KPI7ManagerPoints, KPI7ReviewImpact,
+    TaskReturn, OvertimeEvent, HelpLog, KPI9Bonus, KPI9Cache, WeeklyReport, WeeklyReportReview, EmployeeKPIHistory,
+    EmployeeIdea, EmployeeActivityLog
 )
 from app.models.application import Application, ApplicationMember, ApplicationHistory, ApplicationTask
 
@@ -38,9 +40,11 @@ __all__ = [
     "Place",
     "TrainingCourse", "TrainingTopic", "TrainingContent", "TrainingTask", "TrainingSubmission",
     "Hashtag", "TopicProgress",
-    "CoinTransaction", "ShopItem", "ShopPurchase", "TopicTestResult", "UserSession", "UserShopEquip",
+    "CoinTransaction", "ShopItem", "ShopPurchase", "TopicTestResult", "UserSession", "UserShopEquip", "AttendanceLog",
     "KPIDrop", "PerformanceReview", "ManagerKPI2Cache", "KPIManagerHistory", "ManagerOvertimeCounter",
     "AttentivenessLog", "ManagerKPI4Points", "ActionTypesWithMandatoryFields", "ManagerResponsibility",
     "EmployeeKPI8Points", "KPI7ManagerPoints", "KPI7ReviewImpact",
+    "TaskReturn", "OvertimeEvent", "HelpLog", "KPI9Bonus", "KPI9Cache", "WeeklyReport", "WeeklyReportReview", "EmployeeKPIHistory",
+    "EmployeeIdea", "EmployeeActivityLog",
     "Application", "ApplicationMember", "ApplicationHistory", "ApplicationTask",
 ]

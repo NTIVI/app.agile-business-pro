@@ -197,6 +197,12 @@ export const gamificationApi = {
     api.get<ManagerKPIDetails>('/gamification/kpi/manager/details'),
   simulateKPIDrop: (data: { kpi_type: string; drop_value: number; employee_id?: string }) =>
     api.post<any>(`/gamification/kpi/drops/simulate?kpi_type=${encodeURIComponent(data.kpi_type)}&drop_value=${data.drop_value}${data.employee_id ? `&employee_id=${encodeURIComponent(data.employee_id)}` : ''}`),
+  
+  // Admin dashboard
+  getDepartmentKPIHealth: () =>
+    api.get<DepartmentKPIHealth[]>('/gamification/admin/department-kpi-health'),
+  getManagerReactivity: () =>
+    api.get<ManagerReactivity[]>('/gamification/admin/manager-reactivity'),
 };
 
 export interface KPIDrop {
@@ -242,5 +248,29 @@ export interface ManagerKPIDetails {
   total_overtime_percent: number;
   active_drops: KPIDrop[];
   recent_reviews: PerformanceReview[];
+}
+
+export interface DepartmentKPIHealth {
+  department_id: string | null;
+  employee_count: number;
+  avg_kpi1_deadlines: number | null;
+  avg_kpi2_punctuality: number | null;
+  avg_kpi3_initiative: number | null;
+  avg_kpi4_overtime: number | null;
+  avg_kpi5_quality: number | null;
+  avg_kpi8_attentiveness: number | null;
+  avg_kpi9_bonus: number | null;
+  avg_kpi10_responsibility: number | null;
+}
+
+export interface ManagerReactivity {
+  manager_id: string;
+  manager_name: string;
+  active_drops_count: number;
+  conducted_reviews_count: number;
+  avg_reaction_days: number | null;
+  manager_kpi1_reaction_index: number | null;
+  manager_kpi3_responsibility: number | null;
+  manager_kpi4_attentiveness: number | null;
 }
 

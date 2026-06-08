@@ -82,6 +82,13 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Relationships for department hierarchy
+    manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    department_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    
+    manager: Mapped["User | None"] = relationship("User", remote_side="User.id", back_populates="subordinates")
+    subordinates: Mapped[list["User"]] = relationship("User", remote_side="User.manager_id", back_populates="manager")
+
     # Отношения
     sphere_roles: Mapped[list["UserSphereRole"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan", foreign_keys="Notification.user_id")

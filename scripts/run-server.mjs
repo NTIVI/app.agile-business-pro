@@ -16,6 +16,7 @@ const pyExe = win ? 'python.exe' : 'python';
 
 const candidates = [
   path.join(root, '.venv', win ? `Scripts/${pyExe}` : 'bin/python'),
+  path.join(root, '.venv-linux', win ? `Scripts/${pyExe}` : 'bin/python'),
   path.join(root, '.venv-1', win ? `Scripts/${pyExe}` : 'bin/python'),
   path.join(serverDir, '.venv', win ? `Scripts/${pyExe}` : 'bin/python'),
 ];

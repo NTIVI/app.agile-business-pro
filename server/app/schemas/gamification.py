@@ -153,6 +153,22 @@ class UserKPIOut(BaseModel):
     completion_pct: float = 0.0
     speed_topics_per_day: float = 0.0  # Скорость прохождения
     retention_pct: float = 0.0  # Усвоение материала (avg тест %)
+    
+    # Employee 17-point KPI system fields
+    kpi1_deadlines: Optional[float] = None
+    kpi2_punctuality: Optional[float] = None
+    kpi3_initiative: Optional[float] = None
+    kpi4_overtime: Optional[float] = None
+    kpi5_quality: Optional[float] = None
+    kpi8_attentiveness: Optional[float] = None
+    kpi9_bonus: Optional[float] = None
+    kpi10_responsibility: Optional[float] = None
+    
+    # Manager-specific KPI fields
+    manager_kpi1_reaction_index: Optional[float] = None
+    manager_kpi2_reaction_days: Optional[float] = None
+    manager_kpi3_responsibility: Optional[float] = None
+    manager_kpi4_attentiveness: Optional[float] = None
 
 
 class SessionPing(BaseModel):
@@ -241,3 +257,28 @@ class ManagerKPIDetailsOut(BaseModel):
     total_overtime_percent: int = 0
     active_drops: list[KPIDropOut] = Field(default_factory=list)
     recent_reviews: list[PerformanceReviewOut] = Field(default_factory=list)
+
+
+# --- Admin Dashboard ---
+class DepartmentKPIHealthOut(BaseModel):
+    department_id: Optional[str] = None
+    employee_count: int = 0
+    avg_kpi1_deadlines: Optional[float] = None
+    avg_kpi2_punctuality: Optional[float] = None
+    avg_kpi3_initiative: Optional[float] = None
+    avg_kpi4_overtime: Optional[float] = None
+    avg_kpi5_quality: Optional[float] = None
+    avg_kpi8_attentiveness: Optional[float] = None
+    avg_kpi9_bonus: Optional[float] = None
+    avg_kpi10_responsibility: Optional[float] = None
+
+
+class ManagerReactivityOut(BaseModel):
+    manager_id: uuid.UUID
+    manager_name: str
+    active_drops_count: int = 0
+    conducted_reviews_count: int = 0
+    avg_reaction_days: Optional[float] = None
+    manager_kpi1_reaction_index: Optional[float] = None
+    manager_kpi3_responsibility: Optional[float] = None
+    manager_kpi4_attentiveness: Optional[float] = None

@@ -819,3 +819,35 @@
   }
 }
 
+.managerTabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.managerTab {
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary, #9ca3af);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.managerTab:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+
+.managerTabActive {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  font-weight: 600;
+}
+

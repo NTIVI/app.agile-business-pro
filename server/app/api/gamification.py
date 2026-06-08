@@ -28,6 +28,7 @@ from app.schemas.gamification import (
     UserKPIOut, LeaderboardEntry,
     SectionAccessGrant, UserSectionAccessOut,
     KPIDropOut, PerformanceReviewCreate, PerformanceReviewOut, ManagerKPIDetailsOut,
+    DepartmentKPIHealthOut, ManagerReactivityOut,
 )
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
@@ -981,6 +982,32 @@ async def _build_kpi(db: AsyncSession, user_id: uuid.UUID, name: str, avatar_url
 
     completion_pct = round(topics_completed / topics_total * 100, 1) if topics_total > 0 else 0
 
+    now = datetime.utcnow()
+    month_start = datetime(now.year, now.month, 1)
+    month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
+
+    from app.services import kpi_calculator
+
+    k1 = await kpi_calculator.calculate_kpi1_deadlines(db, user_id, month_start, month_end)
+    k2 = await kpi_calculator.calculate_kpi2_punctuality(db, user_id, month_start, month_end)
+    k3 = await kpi_calculator.calculate_kpi3_initiative(db, user_id, month_start, month_end)
+    k4 = await kpi_calculator.calculate_kpi4_overtime_load(db, user_id, month_start, month_end)
+    k5 = await kpi_calculator.calculate_kpi5_quality(db, user_id, month_start, month_end)
+    k8 = await kpi_calculator.calculate_kpi8_attentiveness(db, user_id, month_start, month_end)
+    k9 = await kpi_calculator.calculate_kpi9_bonus(db, user_id, month_start, month_end)
+    k10 = await kpi_calculator.calculate_kpi10_responsibility(db, user_id, month_start, month_end)
+
+    # Check manager status
+    usr_res = await db.execute(select(User).where(User.id == user_id))
+    usr = usr_res.scalar_one_or_none()
+    
+    mgr_k1, mgr_k2, mgr_k3, mgr_k4 = None, None, None, None
+    if usr and usr.role in [UserRole.ADMIN, UserRole.OWNER, UserRole.DEPUTY_OWNER]:
+        mgr_k1 = await kpi_calculator.calculate_manager_kpi1_reaction_index(db, user_id, month_start, month_end)
+        mgr_k2 = await kpi_calculator.calculate_manager_kpi2_reaction_days(db, user_id, month_start, month_end)
+        mgr_k3 = await kpi_calculator.calculate_manager_kpi3_responsibility(db, user_id, month_start, month_end)
+        mgr_k4 = await kpi_calculator.calculate_manager_kpi4_attentiveness(db, user_id, month_start, month_end)
+
     return UserKPIOut(
         user_id=user_id, user_name=name, avatar_url=avatar_url,
         total_time_minutes=total_time, topics_completed=topics_completed,
@@ -988,6 +1015,20 @@ async def _build_kpi(db: AsyncSession, user_id: uuid.UUID, name: str, avatar_url
         avg_test_score=avg_test_score, coins_balance=float(balance),
         completion_pct=completion_pct, speed_topics_per_day=speed,
         retention_pct=avg_test_score,
+        
+        kpi1_deadlines=float(k1) if k1 is not None else None,
+        kpi2_punctuality=float(k2) if k2 is not None else None,
+        kpi3_initiative=float(k3) if k3 is not None else None,
+        kpi4_overtime=float(k4) if k4 is not None else None,
+        kpi5_quality=float(k5) if k5 is not None else None,
+        kpi8_attentiveness=float(k8) if k8 is not None else None,
+        kpi9_bonus=float(k9) if k9 is not None else None,
+        kpi10_responsibility=float(k10) if k10 is not None else None,
+        
+        manager_kpi1_reaction_index=float(mgr_k1) if mgr_k1 is not None else None,
+        manager_kpi2_reaction_days=float(mgr_k2) if mgr_k2 is not None else None,
+        manager_kpi3_responsibility=float(mgr_k3) if mgr_k3 is not None else None,
+        manager_kpi4_attentiveness=float(mgr_k4) if mgr_k4 is not None else None,
     )
 
 
@@ -1253,4 +1294,136 @@ async def run_kpi_cron_jobs(db: AsyncSession):
                 db.add(history)
                 
     await db.commit()
+
+
+# ===================== ADMIN DASHBOARD ENDPOINTS =====================
+
+@router.get("/admin/department-kpi-health", response_model=list[DepartmentKPIHealthOut])
+async def get_department_kpi_health(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+) -> list[DepartmentKPIHealthOut]:
+    """Получить агрегированное здоровье по KPI в разрезе отделов компании"""
+    now = datetime.utcnow()
+    month_start = datetime(now.year, now.month, 1)
+    month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
+
+    # Получаем список всех сотрудников с их department_id
+    users_q = select(User).where(User.role != UserRole.ADMIN)
+    users_res = await db.execute(users_q)
+    users = users_res.scalars().all()
+
+    # Группируем по отделу
+    from collections import defaultdict
+    dept_users = defaultdict(list)
+    for u in users:
+        dept_id = u.department_id or "unassigned"
+        dept_users[dept_id].append(u)
+
+    from app.services import kpi_calculator
+
+    out = []
+    for dept_id, u_list in dept_users.items():
+        k1_list, k2_list, k3_list, k4_list, k5_list, k8_list, k9_list, k10_list = [], [], [], [], [], [], [], []
+        
+        for u in u_list:
+            k1 = await kpi_calculator.calculate_kpi1_deadlines(db, u.id, month_start, month_end)
+            k2 = await kpi_calculator.calculate_kpi2_punctuality(db, u.id, month_start, month_end)
+            k3 = await kpi_calculator.calculate_kpi3_initiative(db, u.id, month_start, month_end)
+            k4 = await kpi_calculator.calculate_kpi4_overtime_load(db, u.id, month_start, month_end)
+            k5 = await kpi_calculator.calculate_kpi5_quality(db, u.id, month_start, month_end)
+            k8 = await kpi_calculator.calculate_kpi8_attentiveness(db, u.id, month_start, month_end)
+            k9 = await kpi_calculator.calculate_kpi9_bonus(db, u.id, month_start, month_end)
+            k10 = await kpi_calculator.calculate_kpi10_responsibility(db, u.id, month_start, month_end)
+
+            if k1 is not None: k1_list.append(k1)
+            if k2 is not None: k2_list.append(k2)
+            if k3 is not None: k3_list.append(k3)
+            if k4 is not None: k4_list.append(k4)
+            if k5 is not None: k5_list.append(k5)
+            if k8 is not None: k8_list.append(k8)
+            if k9 is not None: k9_list.append(k9)
+            if k10 is not None: k10_list.append(k10)
+
+        def avg_or_none(lst):
+            return float(sum(lst) / len(lst)) if lst else None
+
+        out.append(DepartmentKPIHealthOut(
+            department_id=dept_id if dept_id != "unassigned" else None,
+            employee_count=len(u_list),
+            avg_kpi1_deadlines=avg_or_none(k1_list),
+            avg_kpi2_punctuality=avg_or_none(k2_list),
+            avg_kpi3_initiative=avg_or_none(k3_list),
+            avg_kpi4_overtime=avg_or_none(k4_list),
+            avg_kpi5_quality=avg_or_none(k5_list),
+            avg_kpi8_attentiveness=avg_or_none(k8_list),
+            avg_kpi9_bonus=avg_or_none(k9_list),
+            avg_kpi10_responsibility=avg_or_none(k10_list)
+        ))
+
+    return out
+
+
+@router.get("/admin/manager-reactivity", response_model=list[ManagerReactivityOut])
+async def get_manager_reactivity(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin)
+) -> list[ManagerReactivityOut]:
+    """Получить показатели оперативности реагирования и дисциплины руководителей"""
+    now = datetime.utcnow()
+    month_start = datetime(now.year, now.month, 1)
+    month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
+
+    # Находим всех менеджеров/админов
+    managers_res = await db.execute(
+        select(User).where(User.role.in_([UserRole.ADMIN, UserRole.OWNER, UserRole.DEPUTY_OWNER]))
+    )
+    managers = managers_res.scalars().all()
+
+    from app.services import kpi_calculator
+
+    out = []
+    for mgr in managers:
+        # Подчиненные
+        sub_res = await db.execute(select(User.id).where(User.manager_id == mgr.id))
+        sub_ids = [r[0] for r in sub_res.fetchall()]
+
+        active_drops_count = 0
+        if sub_ids:
+            drops_res = await db.execute(
+                select(func.count(KPIDrop.id)).where(
+                    KPIDrop.employee_id.in_(sub_ids),
+                    KPIDrop.resolved == False
+                )
+            )
+            active_drops_count = drops_res.scalar() or 0
+
+        # Количество проведенных разборов за месяц
+        rev_count_res = await db.execute(
+            select(func.count(PerformanceReview.id)).where(
+                PerformanceReview.manager_id == mgr.id,
+                PerformanceReview.review_date >= month_start,
+                PerformanceReview.review_date <= month_end
+            )
+        )
+        reviews_count = rev_count_res.scalar() or 0
+
+        # KPI1, KPI2, KPI3, KPI4
+        k1 = await kpi_calculator.calculate_manager_kpi1_reaction_index(db, mgr.id, month_start, month_end)
+        k2 = await kpi_calculator.calculate_manager_kpi2_reaction_days(db, mgr.id, month_start, month_end)
+        k3 = await kpi_calculator.calculate_manager_kpi3_responsibility(db, mgr.id, month_start, month_end)
+        k4 = await kpi_calculator.calculate_manager_kpi4_attentiveness(db, mgr.id, month_start, month_end)
+
+        out.append(ManagerReactivityOut(
+            manager_id=mgr.id,
+            manager_name=mgr.name,
+            active_drops_count=active_drops_count,
+            conducted_reviews_count=reviews_count,
+            avg_reaction_days=float(k2) if k2 is not None else None,
+            manager_kpi1_reaction_index=float(k1) if k1 is not None else None,
+            manager_kpi3_responsibility=float(k3) if k3 is not None else None,
+            manager_kpi4_attentiveness=float(k4) if k4 is not None else None
+        ))
+
+    return out
 
