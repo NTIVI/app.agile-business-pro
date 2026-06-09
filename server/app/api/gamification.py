@@ -1,5 +1,6 @@
 # API для геймификации: Agile.Coins, магазин, KPI, тесты, лидерборд
 import uuid
+import time
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
@@ -32,6 +33,37 @@ from app.schemas.gamification import (
 )
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
+
+
+class SimpleMemoryCache:
+    def __init__(self, default_ttl=30):
+        self.default_ttl = default_ttl
+        self.cache = {}
+
+    def get(self, key):
+        if key in self.cache:
+            val, expire_time = self.cache[key]
+            if time.time() < expire_time:
+                return val
+            else:
+                del self.cache[key]
+        return None
+
+    def set(self, key, value, ttl=None):
+        ttl = ttl if ttl is not None else self.default_ttl
+        self.cache[key] = (value, time.time() + ttl)
+
+    def clear(self):
+        self.cache.clear()
+
+
+kpi_cache = SimpleMemoryCache()
+
+from sqlalchemy import event
+from app.database import engine
+
+# Очищать кэш при любом коммите в БД, чтобы данные всегда оставались актуальными при изменениях
+event.listen(engine.sync_engine, "commit", lambda conn: kpi_cache.clear())
 
 
 # ===================== HELPERS =====================
@@ -486,15 +518,27 @@ async def session_end(db: AsyncSession = Depends(get_db), user: User = Depends(g
 
 @router.get("/kpi/me", response_model=UserKPIOut)
 async def my_kpi(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    return await _build_kpi(db, user.id, user.name, user.avatar_url)
+    cache_key = f"kpi_user:{user.id}"
+    cached_data = kpi_cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+    res = await _build_kpi(db, user.id, user.name, user.avatar_url)
+    kpi_cache.set(cache_key, res, ttl=15)
+    return res
 
 
 @router.get("/kpi/user/{user_id}", response_model=UserKPIOut)
 async def user_kpi(user_id: uuid.UUID, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)):
+    cache_key = f"kpi_user:{user_id}"
+    cached_data = kpi_cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
     target = await db.get(User, user_id)
     if not target:
         raise HTTPException(404, "Пользователь не найден")
-    return await _build_kpi(db, target.id, target.name, target.avatar_url)
+    res = await _build_kpi(db, target.id, target.name, target.avatar_url)
+    kpi_cache.set(cache_key, res, ttl=15)
+    return res
 
 
 # Helper to calculate working days (standard Mon-Fri 9:00 - 18:00)
@@ -832,6 +876,10 @@ async def get_manager_kpi_details(
     user: User = Depends(get_current_user)
 ):
     """Получить детальные KPI показатели руководителя"""
+    cache_key = f"manager_kpi_details:{user.id}"
+    cached_data = kpi_cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
     now = datetime.utcnow()
     month_start = datetime(now.year, now.month, 1)
     
@@ -886,7 +934,7 @@ async def get_manager_kpi_details(
             created_at=r.created_at
         ))
         
-    return ManagerKPIDetailsOut(
+    res_out = ManagerKPIDetailsOut(
         manager_id=user.id,
         current_kpi2=current_kpi2,
         reviews_count=reviews_count,
@@ -896,6 +944,8 @@ async def get_manager_kpi_details(
         active_drops=active_drops_res,
         recent_reviews=recent_out
     )
+    kpi_cache.set(cache_key, res_out, ttl=15)
+    return res_out
 
 
 @router.post("/kpi/drops/simulate")
@@ -1036,6 +1086,12 @@ async def _build_kpi(db: AsyncSession, user_id: uuid.UUID, name: str, avatar_url
 
 @router.get("/leaderboard", response_model=list[LeaderboardEntry])
 async def leaderboard(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+    is_admin = user.role in ADMIN_ROLES
+    cache_key = f"leaderboard:{is_admin}"
+    cached_data = kpi_cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+
     from app.models.task import Task
     from app.models.training import TopicProgress, TrainingTopic, CourseAssignment
 
@@ -1178,6 +1234,7 @@ async def leaderboard(db: AsyncSession = Depends(get_db), user: User = Depends(g
     for i, e in enumerate(entries):
         e.rank = i + 1
 
+    kpi_cache.set(cache_key, entries, ttl=30)
     return entries
 
 
@@ -1304,6 +1361,10 @@ async def get_department_kpi_health(
     admin: User = Depends(require_admin)
 ) -> list[DepartmentKPIHealthOut]:
     """Получить агрегированное здоровье по KPI в разрезе отделов компании"""
+    cache_key = "admin_department_kpi_health"
+    cached_data = kpi_cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
     now = datetime.utcnow()
     month_start = datetime(now.year, now.month, 1)
     month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
@@ -1361,6 +1422,7 @@ async def get_department_kpi_health(
             avg_kpi10_responsibility=avg_or_none(k10_list)
         ))
 
+    kpi_cache.set(cache_key, out, ttl=60)
     return out
 
 
@@ -1370,6 +1432,10 @@ async def get_manager_reactivity(
     admin: User = Depends(require_admin)
 ) -> list[ManagerReactivityOut]:
     """Получить показатели оперативности реагирования и дисциплины руководителей"""
+    cache_key = "admin_manager_reactivity"
+    cached_data = kpi_cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
     now = datetime.utcnow()
     month_start = datetime(now.year, now.month, 1)
     month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
@@ -1425,5 +1491,6 @@ async def get_manager_reactivity(
             manager_kpi4_attentiveness=float(k4) if k4 is not None else None
         ))
 
+    kpi_cache.set(cache_key, out, ttl=60)
     return out
 
