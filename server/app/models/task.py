@@ -1,7 +1,7 @@
 # Модель задачи
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, DateTime, ForeignKey, Index, Boolean, UniqueConstraint
+from sqlalchemy import String, Text, DateTime, ForeignKey, Index, Boolean, UniqueConstraint, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
