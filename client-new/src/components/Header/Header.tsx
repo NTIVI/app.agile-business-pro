@@ -59,16 +59,66 @@ export default function Header() {
   useEffect(() => {
     if (!user) return;
     const handler = (e: Event) => {
-      setUnreadCount((e as CustomEvent).detail as number);
+      let count = (e as CustomEvent).detail as number;
+      if (['owner', 'admin', 'deputy_owner'].includes(user.role)) {
+        const resolved = JSON.parse(localStorage.getItem('resolved-notifications') || '[]');
+        const totalMock = 3 - resolved.filter((id: string) => ['mock-crit-1', 'mock-crit-2', 'mock-crit-3'].includes(id)).length;
+        const hasReadMock = localStorage.getItem('mock-notifications-read') === 'true';
+        if (!hasReadMock) {
+          count += totalMock;
+        }
+      }
+      setUnreadCount(count);
     };
     window.addEventListener('unread-count-update', handler);
+
+    // Initial check
+    if (['owner', 'admin', 'deputy_owner'].includes(user.role)) {
+      const resolved = JSON.parse(localStorage.getItem('resolved-notifications') || '[]');
+      const totalMock = 3 - resolved.filter((id: string) => ['mock-crit-1', 'mock-crit-2', 'mock-crit-3'].includes(id)).length;
+      const hasReadMock = localStorage.getItem('mock-notifications-read') === 'true';
+      if (!hasReadMock) {
+        setUnreadCount(prev => prev + totalMock);
+      }
+    }
+
     return () => window.removeEventListener('unread-count-update', handler);
   }, [user]);
 
   const loadNotifications = async () => {
     try {
       const { data } = await api.get('/notifications');
-      setNotifications(data);
+      let list = [...data];
+      if (user && ['owner', 'admin', 'deputy_owner'].includes(user.role)) {
+        const resolved = JSON.parse(localStorage.getItem('resolved-notifications') || '[]');
+        const criticalMock = [
+          {
+            id: 'mock-crit-1',
+            title: 'Расхождение отметок по задаче #1043',
+            message: 'Начальник Смирнов А. поставил "Сдано в срок", но файл отправлен на 2 дня позже дедлайна. Исполнитель: Сидорова М.',
+            type: 'critical_divergence',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 'mock-crit-2',
+            title: 'Непроведенный разбор KPI подчинённого',
+            message: 'Начальник Смирнов А. не провел разбор падения KPI сотрудника Сидорова М. в течение 5 дней.',
+            type: 'critical_warning',
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+          },
+          {
+            id: 'mock-crit-3',
+            title: 'Зависшее тестирование идеи сотрудника',
+            message: 'Идея "Автоматическое планирование" сотрудника Иванов И. находится в тестировании уже 16 дней.',
+            type: 'critical_info',
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+          }
+        ];
+        const filteredMock = criticalMock.filter(m => !resolved.includes(m.id));
+        list = [...filteredMock, ...list];
+        localStorage.setItem('mock-notifications-read', 'true');
+      }
+      setNotifications(list);
       setShowNotifications(true);
       await api.put('/notifications/read-all');
       setUnreadCount(0);
@@ -226,12 +276,46 @@ export default function Header() {
                   <p className={styles.notifEmpty}>{lang.common.noData}</p>
                 ) : (
                   notifications.map((n) => {
-                    const borderColor = n.type === 'deadline_overdue' ? '#dc2626' : n.type === 'deadline_today' ? '#f59e0b' : n.type === 'deadline_soon' ? '#3b82f6' : undefined;
+                    const borderColor = (n.type === 'deadline_overdue' || n.type === 'critical_divergence') 
+                      ? '#dc2626' 
+                      : (n.type === 'deadline_today' || n.type === 'critical_warning') 
+                        ? '#f59e0b' 
+                        : (n.type === 'deadline_soon' || n.type === 'critical_info') 
+                          ? '#3b82f6' 
+                          : undefined;
                     return (
                     <div key={n.id} className={styles.notifItem} onClick={() => { if (n.link && typeof n.link === 'string' && n.link.startsWith('/')) { navigate(n.link); setShowNotifications(false); } }} style={{ cursor: n.link ? 'pointer' : undefined, borderLeftColor: borderColor }}>
                       <strong>{n.title}</strong>
                       <p>{n.message}</p>
-                      <small>{new Date(n.created_at).toLocaleString()}</small>
+                      {n.type === 'critical_divergence' && (
+                        <div style={{ marginTop: 8 }}>
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-primary"
+                            style={{
+                              fontSize: '11px',
+                              padding: '4px 8px',
+                              background: '#ef4444',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const resolved = JSON.parse(localStorage.getItem('resolved-notifications') || '[]');
+                              resolved.push(n.id);
+                              localStorage.setItem('resolved-notifications', JSON.stringify(resolved));
+                              setNotifications(prev => prev.filter(x => x.id !== n.id));
+                              alert('Расхождение успешно исправлено. Начальнику отправлено соответствующее извещение.');
+                              window.dispatchEvent(new Event('divergence-fixed'));
+                            }}
+                          >
+                            Исправить расхождение вручную
+                          </button>
+                        </div>
+                      )}
+                      <small style={{ display: 'block', marginTop: 4 }}>{new Date(n.created_at).toLocaleString()}</small>
                     </div>
                     );
                   })
@@ -241,18 +325,6 @@ export default function Header() {
           )}
         </div>
 
-        {renderConferenceButtons()}
-
-        {FULL_ACCESS_ROLES.includes(user.role as UserRole) && (
-          <button className={`btn btn-sm btn-danger ${styles.adminBtn}`} onClick={() => navigate('/admin')}>
-            {lang.nav.admin}
-          </button>
-        )}
-
-        <button className={styles.coinBtn} onClick={() => navigate('/shop')} aria-label={lang.shop?.balanceLabel || 'Agile.Coins'}>
-          <Coins size={18} />
-          <span>{balance !== null ? balance : '...'}</span>
-        </button>
 
         <div className={styles.userInfo} onClick={() => navigate('/profile')}>
           <div className="avatar avatar-sm">

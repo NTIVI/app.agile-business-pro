@@ -424,7 +424,7 @@ async def calculate_manager_kpi1_reaction_index(db: AsyncSession, manager_id: uu
     from app.models.gamification import KPIDrop
     drops_res = await db.execute(
         select(KPIDrop).where(
-            KPIDrop.user_id.in_(sub_ids),
+            KPIDrop.employee_id.in_(sub_ids),
             KPIDrop.drop_date >= month_start,
             KPIDrop.drop_date <= month_end
         )

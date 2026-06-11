@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, FolderInput, ListTodo, ChevronsLeftRight, MoreHorizontal, Pencil, Trash2, Archive, ChevronDown, FileText } from 'lucide-react';
+import { Plus, FolderInput, ListTodo, ChevronsLeftRight, MoreHorizontal, Pencil, Trash2, Archive, ChevronDown, FileText, Video } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { toggleMobileMenu, toggleSidebarNarrow } from '../../store/slices/uiSlice';
 import { t } from '../../i18n';
@@ -94,7 +94,6 @@ const secondaryNavItems = [
     { path: '/assessment', key: 'assessment' as const },
     { path: '/competency', key: 'competency' as const },
   ]},
-  { path: '/music', key: 'music' as const },
 ];
 
 /** Старый плоский список — для стажёров обучения */
@@ -105,7 +104,6 @@ const internNavItems = [
   { path: '/kpi', key: 'kpi' as const },
   { path: '/leaderboard', key: 'leaderboard' as const },
   { path: '/profile', key: 'profile' as const },
-  { path: '/shop', key: 'shop' as const },
 ];
 
 function NavButton({
@@ -153,6 +151,48 @@ export default function Sidebar() {
   const [projectList, setProjectList] = useState<Project[]>([]);
   const [inlineProjectName, setInlineProjectName] = useState('');
   const [showInlineCreate, setShowInlineCreate] = useState(false);
+
+  const [conferenceActive, setConferenceActive] = useState(false);
+
+  const fetchConferenceStatus = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data } = await api.get('/conference');
+      setConferenceActive(data.active);
+    } catch (e) {
+      console.error('Failed to fetch conference status:', e);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchConferenceStatus();
+    const interval = setInterval(fetchConferenceStatus, 10000);
+    return () => clearInterval(interval);
+  }, [user, fetchConferenceStatus]);
+
+  const handleCreateConference = async () => {
+    try {
+      await api.post('/conference');
+      setConferenceActive(true);
+      window.open('https://agile-coll.vercel.app/', '_blank');
+    } catch (e) {
+      console.error('Failed to create conference:', e);
+    }
+  };
+
+  const handleStopConference = async () => {
+    try {
+      await api.delete('/conference');
+      setConferenceActive(false);
+    } catch (e) {
+      console.error('Failed to stop conference:', e);
+    }
+  };
+
+  const handleJoinConference = () => {
+    window.open('https://agile-coll.vercel.app/', '_blank');
+  };
 
   /* ── project context menu state ── */
   const [ctxProject, setCtxProject] = useState<Project | null>(null);
@@ -589,17 +629,65 @@ export default function Sidebar() {
             </button>
           )}
 
+          {/* Блок Видеоконференции */}
+          {conferenceActive ? (
+            <>
+              <button
+                type="button"
+                className={`${styles.navItem}`}
+                onClick={handleJoinConference}
+                title="Присоединиться к конференции"
+              >
+                <span className={styles.icon} style={{ color: '#10b981' }}>
+                  <Video style={{ animation: 'pulse 2s infinite' }} />
+                </span>
+                <span className={styles.label} style={{ color: '#10b981', fontWeight: 'bold' }}>Войти в звонок</span>
+              </button>
+              {['admin', 'owner', 'deputy_owner'].includes(user.role) && (
+                <button
+                  type="button"
+                  className={styles.navItem}
+                  onClick={handleStopConference}
+                  title="Завершить конференцию"
+                  style={{ color: '#ef4444' }}
+                >
+                  <span className={styles.icon} style={{ color: '#ef4444' }}>
+                    <Video />
+                  </span>
+                  <span className={styles.label}>Завершить звонок</span>
+                </button>
+              )}
+            </>
+          ) : (
+            ['admin', 'owner', 'deputy_owner'].includes(user.role) && (
+              <button
+                type="button"
+                className={styles.navItem}
+                onClick={handleCreateConference}
+                title="Создать видеоконференцию"
+              >
+                <span className={styles.icon}>
+                  <Video />
+                </span>
+                <span className={styles.label}>Создать конференцию</span>
+              </button>
+            )
+          )}
+
           {(['admin', 'owner', 'deputy_owner'] as const).includes(user.role as 'admin' | 'owner' | 'deputy_owner') && (
-            <button
-              type="button"
-              className={`${styles.navItem} ${location.pathname === '/admin' ? styles.active : ''}`}
-              onClick={() => go('/admin')}
-            >
-              <span className={styles.icon}>
-                <SettingsIcon />
-              </span>
-              <span className={styles.label}>{lang.nav.admin}</span>
-            </button>
+            <>
+              <div className={styles.navDivider} />
+              <button
+                type="button"
+                className={`${styles.navItem} ${location.pathname === '/admin' ? styles.active : ''}`}
+                onClick={() => go('/admin')}
+              >
+                <span className={styles.icon}>
+                  <SettingsIcon />
+                </span>
+                <span className={styles.label}>{lang.nav.admin}</span>
+              </button>
+            </>
           )}
         </nav>
 

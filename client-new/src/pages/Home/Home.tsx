@@ -129,9 +129,6 @@ export default function HomePage() {
             <button className="btn btn-secondary" onClick={() => navigate('/events')}>
               {lang.dashboard.viewEvents}
             </button>
-            <button className="btn btn-secondary" onClick={() => navigate('/music')}>
-              {lang.nav.music}
-            </button>
           </div>
         </div>
 

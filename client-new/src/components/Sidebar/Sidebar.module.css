@@ -557,14 +557,21 @@
     padding: 10px 8px;
   }
 
+  .sidebar.sidebarNarrow .navSubItem {
+    padding-left: 12px !important;
+    justify-content: center;
+  }
+
   .sidebar.sidebarNarrow .sectionHeader {
     justify-content: center;
     padding: 0 6px 6px;
+    display: none !important;
   }
 
   .sidebar.sidebarNarrow .sectionAdd {
     width: 32px;
     height: 32px;
+    display: none !important;
   }
 
   .sidebar.sidebarNarrow .projectItem {
@@ -572,8 +579,18 @@
     padding: 10px 8px;
   }
 
+  .sidebar.sidebarNarrow .projectRow {
+    justify-content: center;
+  }
+
   .sidebar.sidebarNarrow .projectFolderIcon {
     margin: 0;
+  }
+
+  .sidebar.sidebarNarrow .projectCtxBtn,
+  .sidebar.sidebarNarrow .archiveSection,
+  .sidebar.sidebarNarrow .inlineCreateWrap {
+    display: none !important;
   }
 
   .sidebar.sidebarNarrow .active::before {

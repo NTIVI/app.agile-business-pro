@@ -806,7 +806,7 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
 
@@ -815,15 +815,15 @@
   width: 100%;
   padding: 8px 12px 8px 36px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.25);
-  color: #e8ecf1;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #ffffff !important;
+  color: #000000 !important;
   font-size: 0.875rem;
 }
 
 .workspaceSearchInput::placeholder,
 .workspaceSearch::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(0, 0, 0, 0.5) !important;
 }
 
 .workspacePanelToggle {

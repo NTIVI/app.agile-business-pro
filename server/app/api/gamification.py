@@ -59,11 +59,8 @@ class SimpleMemoryCache:
 
 kpi_cache = SimpleMemoryCache()
 
-from sqlalchemy import event
-from app.database import engine
+# Кэш сбрасывается автоматически по TTL (15-30 секунд), что существенно повышает производительность.
 
-# Очищать кэш при любом коммите в БД, чтобы данные всегда оставались актуальными при изменениях
-event.listen(engine.sync_engine, "commit", lambda conn: kpi_cache.clear())
 
 
 # ===================== HELPERS =====================

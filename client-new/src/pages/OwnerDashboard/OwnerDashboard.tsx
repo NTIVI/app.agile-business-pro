@@ -152,15 +152,24 @@ export default function OwnerDashboard() {
   const [newBonusType, setNewBonusType] = useState({ name: '', percent: 5, limit: 3 });
 
   // Notifications State
-  const [notifications, setNotifications] = useState<Array<{ id: string; type: string; title: string; desc: string; date: string }>>([
-    { id: 'n-1', type: 'error', title: 'Расхождение отметок по задаче #1043', desc: 'Начальник Смирнов А. поставил "Сдано в срок", но файл отправлен на 2 дня позже дедлайна. Исполнитель: Сидорова М.', date: 'Только что' },
-    { id: 'n-2', type: 'warning', title: 'Непроведенный разбор KPI подчинённого', desc: 'Начальник Смирнов А. не провел разбор падения KPI сотрудника Сидорова М. в течение 5 дней.', date: '1 час назад' },
-    { id: 'n-3', type: 'info', title: 'Зависшее тестирование идеи сотрудника', desc: 'Идея "Автоматическое планирование" сотрудника Иванов И. находится в тестировании уже 16 дней.', date: 'Вчера' }
-  ]);
+  const [notifications, setNotifications] = useState<Array<{ id: string; type: string; title: string; desc: string; date: string }>>([]);
+
+  const loadDashboardNotifications = () => {
+    const resolved = JSON.parse(localStorage.getItem('resolved-notifications') || '[]');
+    const allMock = [
+      { id: 'mock-crit-1', type: 'error', title: 'Расхождение отметок по задаче #1043', desc: 'Начальник Смирнов А. поставил "Сдано в срок", но файл отправлен на 2 дня позже дедлайна. Исполнитель: Сидорова М.', date: 'Только что' },
+      { id: 'mock-crit-2', type: 'warning', title: 'Непроведенный разбор KPI подчинённого', desc: 'Начальник Смирнов А. не провел разбор падения KPI сотрудника Сидорова М. в течение 5 дней.', date: '1 час назад' },
+      { id: 'mock-crit-3', type: 'info', title: 'Зависшее тестирование идеи сотрудника', desc: 'Идея "Автоматическое планирование" сотрудника Иванов И. находится в тестировании уже 16 дней.', date: 'Вчера' }
+    ];
+    setNotifications(allMock.filter(n => !resolved.includes(n.id)));
+  };
 
   // Load KPI drops on mount
   useEffect(() => {
     loadActiveDrops();
+    loadDashboardNotifications();
+    window.addEventListener('divergence-fixed', loadDashboardNotifications);
+    return () => window.removeEventListener('divergence-fixed', loadDashboardNotifications);
   }, []);
 
   const loadActiveDrops = async () => {
@@ -574,36 +583,8 @@ export default function OwnerDashboard() {
             </div>
           </div>
 
-          {/* Critical Alerts Center */}
-          <div className={`${styles.card} ${styles.col8}`}>
-            <div className={styles.cardHeader}>
-              <h3><ShieldAlert size={18} style={{ color: '#ef4444' }} /> Центр критических уведомлений владельца</h3>
-            </div>
-            <div className={styles.alertsList}>
-              {notifications.map(n => (
-                <div key={n.id} className={styles.alertItem}>
-                  <div className={styles.alertIcon}>
-                    {n.type === 'error' ? <AlertCircle size={18} /> : <AlertTriangle size={18} />}
-                  </div>
-                  <div className={styles.alertContent}>
-                    <div className={styles.alertTitle}>{n.title}</div>
-                    <div className={styles.alertDesc}>{n.desc}</div>
-                    <div className={styles.alertMeta}>
-                      <span>{n.date}</span>
-                      {n.title.includes('расхождение') && (
-                        <button className="btn btn-xs btn-primary" onClick={() => handleFixDivergence('1043')}>
-                          Исправить расхождение вручную
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Sick employees and Hospital Widget */}
-          <div className={`${styles.card} ${styles.col4}`}>
+          <div className={`${styles.card} ${styles.col12}`}>
             <div className={styles.cardHeader}>
               <h3><Activity size={18} style={{ color: '#10b981' }} /> Тяжёлые больничные сотрудников</h3>
             </div>
