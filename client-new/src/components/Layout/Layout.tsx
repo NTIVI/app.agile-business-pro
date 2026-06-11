@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from '../Header/Header';
 import Sidebar from '../Sidebar/Sidebar';
-import MusicPlayer from '../MusicPlayer/MusicPlayer';
 import { gamificationApi } from '../../api/gamification';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { toggleSidebar } from '../../store/slices/uiSlice';
@@ -47,7 +46,6 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
-      <MusicPlayer />
     </div>
   );
 }

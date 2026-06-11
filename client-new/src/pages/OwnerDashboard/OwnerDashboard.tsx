@@ -531,7 +531,11 @@ export default function OwnerDashboard() {
       {/* 1. Header Area with badges */}
       <div className={styles.header}>
         <div className={styles.titleArea}>
-          <h1>Личный Кабинет Владельца Agile Workspace</h1>
+          <h1>
+            <span className={styles.titleText}>Личный Кабинет Владельца</span>{' '}
+            <span className={styles.agileText}>Agile</span>{' '}
+            <span className={styles.workspaceText}>Workspace</span>
+          </h1>
           <p className={styles.subtitle}>Полный оперативный контроль над KPI, качеством, стажировкой и регламентами компании</p>
         </div>
         

@@ -67,8 +67,6 @@ const iconMap: Record<string, () => JSX.Element> = {
   home: HomeIcon,
   events: CalendarIcon,
   places: MapPinIcon,
-  music: MusicIcon,
-  shop: ShopIcon,
   analytics: BarChartIcon,
   training: BookIcon,
   assessment: ClipboardCheckIcon,
@@ -439,6 +437,20 @@ export default function Sidebar() {
             );
           })}
 
+          {(['admin', 'owner', 'deputy_owner', 'consultant'] as const).includes(user.role as 'admin' | 'owner' | 'deputy_owner' | 'consultant') && (
+            <button
+              type="button"
+              className={`${styles.navItem} ${location.pathname.startsWith('/applications') ? styles.active : ''}`}
+              onClick={() => go('/applications')}
+              aria-label={lang.nav.applications}
+              title={lang.nav.applications}
+              style={{ marginBottom: '8px' }}
+            >
+              <ApplicationsIcon />
+              <span className={styles.label}>{lang.nav.applications}</span>
+            </button>
+          )}
+
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>{lang.sidebar.projectsHeading}</span>
@@ -615,19 +627,6 @@ export default function Sidebar() {
               </button>
             );
           })}
-
-          {(['admin', 'owner', 'deputy_owner', 'consultant'] as const).includes(user.role as 'admin' | 'owner' | 'deputy_owner' | 'consultant') && (
-            <button
-              type="button"
-              className={`${styles.navItem} ${location.pathname.startsWith('/applications') ? styles.active : ''}`}
-              onClick={() => go('/applications')}
-              aria-label={lang.nav.applications}
-              title={lang.nav.applications}
-            >
-              <ApplicationsIcon />
-              <span className={styles.label}>{lang.nav.applications}</span>
-            </button>
-          )}
 
           {/* Блок Видеоконференции */}
           {conferenceActive ? (
