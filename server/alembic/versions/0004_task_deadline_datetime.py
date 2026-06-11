@@ -1,5 +1,6 @@
 """change task deadline from date to datetime"""
 from alembic import op
+# pyrefly: ignore [missing-import]
 import sqlalchemy as sa
 
 revision = "0004_deadline_dt"

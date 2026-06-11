@@ -12,6 +12,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from alembic import op
+# pyrefly: ignore [missing-import]
 import sqlalchemy as sa
 
 revision = "0012_add_user_manager_and_department"

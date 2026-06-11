@@ -8,6 +8,7 @@ Create Date: 2026-04-20
 from __future__ import annotations
 
 from alembic import op
+# pyrefly: ignore [missing-import]
 import sqlalchemy as sa
 
 revision = "0011_events_event_kind"
