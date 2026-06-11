@@ -10,14 +10,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        sa.text(
-            """
-            ALTER TABLE iteration_board_columns
-            ADD COLUMN IF NOT EXISTS color VARCHAR(30)
-            """
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE iteration_board_columns
+                ADD COLUMN IF NOT EXISTS color VARCHAR(30)
+                """
+            )
         )
-    )
 
 
 def downgrade() -> None:

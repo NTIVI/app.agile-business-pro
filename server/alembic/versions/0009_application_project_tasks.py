@@ -17,70 +17,72 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Колонки/таблицы могли быть созданы в 0001 через metadata.create_all()
-    op.execute(
-        sa.text(
-            """
-            ALTER TABLE applications ADD COLUMN IF NOT EXISTS project_name VARCHAR(500);
-            ALTER TABLE applications ADD COLUMN IF NOT EXISTS project_id UUID;
-            ALTER TABLE applications ADD COLUMN IF NOT EXISTS sphere_deadlines_json TEXT;
-            """
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        # Колонки/таблицы могли быть созданы в 0001 через metadata.create_all()
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE applications ADD COLUMN IF NOT EXISTS project_name VARCHAR(500);
+                ALTER TABLE applications ADD COLUMN IF NOT EXISTS project_id UUID;
+                ALTER TABLE applications ADD COLUMN IF NOT EXISTS sphere_deadlines_json TEXT;
+                """
+            )
         )
-    )
-    op.execute(
-        sa.text(
-            """
-            DO $$
-            BEGIN
-              IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint WHERE conname = 'fk_applications_project_id'
-              ) THEN
-                ALTER TABLE applications
-                  ADD CONSTRAINT fk_applications_project_id
-                  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL;
-              END IF;
-            END $$;
-            """
+        op.execute(
+            sa.text(
+                """
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'fk_applications_project_id'
+                  ) THEN
+                    ALTER TABLE applications
+                      ADD CONSTRAINT fk_applications_project_id
+                      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL;
+                  END IF;
+                END $$;
+                """
+            )
         )
-    )
-    op.execute(
-        sa.text(
-            """
-            ALTER TABLE application_tasks ADD COLUMN IF NOT EXISTS parent_id UUID;
-            ALTER TABLE application_tasks ADD COLUMN IF NOT EXISTS deadline TIMESTAMP WITHOUT TIME ZONE;
-            """
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE application_tasks ADD COLUMN IF NOT EXISTS parent_id UUID;
+                ALTER TABLE application_tasks ADD COLUMN IF NOT EXISTS deadline TIMESTAMP WITHOUT TIME ZONE;
+                """
+            )
         )
-    )
-    op.execute(
-        sa.text(
-            """
-            DO $$
-            BEGIN
-              IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint WHERE conname = 'fk_application_tasks_parent_id'
-              ) THEN
-                ALTER TABLE application_tasks
-                  ADD CONSTRAINT fk_application_tasks_parent_id
-                  FOREIGN KEY (parent_id) REFERENCES application_tasks(id) ON DELETE CASCADE;
-              END IF;
-            END $$;
-            """
+        op.execute(
+            sa.text(
+                """
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'fk_application_tasks_parent_id'
+                  ) THEN
+                    ALTER TABLE application_tasks
+                      ADD CONSTRAINT fk_application_tasks_parent_id
+                      FOREIGN KEY (parent_id) REFERENCES application_tasks(id) ON DELETE CASCADE;
+                  END IF;
+                END $$;
+                """
+            )
         )
-    )
-    op.execute(
-        sa.text(
-            """
-            CREATE TABLE IF NOT EXISTS application_task_assignees (
-                id UUID PRIMARY KEY,
-                application_task_id UUID NOT NULL REFERENCES application_tasks(id) ON DELETE CASCADE,
-                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                CONSTRAINT uq_application_task_assignee UNIQUE (application_task_id, user_id)
-            );
-            CREATE INDEX IF NOT EXISTS ix_application_task_assignees_task
-              ON application_task_assignees (application_task_id);
-            """
+        op.execute(
+            sa.text(
+                """
+                CREATE TABLE IF NOT EXISTS application_task_assignees (
+                    id UUID PRIMARY KEY,
+                    application_task_id UUID NOT NULL REFERENCES application_tasks(id) ON DELETE CASCADE,
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    CONSTRAINT uq_application_task_assignee UNIQUE (application_task_id, user_id)
+                );
+                CREATE INDEX IF NOT EXISTS ix_application_task_assignees_task
+                  ON application_task_assignees (application_task_id);
+                """
+            )
         )
-    )
 
 
 def downgrade() -> None:

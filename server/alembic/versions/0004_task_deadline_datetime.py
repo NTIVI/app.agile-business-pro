@@ -9,25 +9,27 @@ depends_on = None
 
 
 def upgrade():
-    # Уже DateTime после create_all() — повторный alter ломает миграцию
-    op.execute(
-        sa.text(
-            """
-            DO $$
-            BEGIN
-              IF EXISTS (
-                SELECT 1 FROM information_schema.columns
-                WHERE table_schema = 'public' AND table_name = 'tasks'
-                  AND column_name = 'deadline' AND udt_name = 'date'
-              ) THEN
-                ALTER TABLE tasks
-                  ALTER COLUMN deadline TYPE timestamp without time zone
-                  USING deadline::timestamp;
-              END IF;
-            END $$;
-            """
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        # Уже DateTime после create_all() — повторный alter ломает миграцию
+        op.execute(
+            sa.text(
+                """
+                DO $$
+                BEGIN
+                  IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'tasks'
+                      AND column_name = 'deadline' AND udt_name = 'date'
+                  ) THEN
+                    ALTER TABLE tasks
+                      ALTER COLUMN deadline TYPE timestamp without time zone
+                      USING deadline::timestamp;
+                  END IF;
+                END $$;
+                """
+            )
         )
-    )
 
 
 def downgrade():

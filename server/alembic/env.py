@@ -1,4 +1,9 @@
 from __future__ import annotations
+import os
+import sys
+
+# Добавляем корневую папку сервера в path, чтобы IDE и python корректно импортировали app
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from logging.config import fileConfig
 

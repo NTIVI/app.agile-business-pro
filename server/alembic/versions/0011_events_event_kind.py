@@ -17,13 +17,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        sa.text(
-            """
-            ALTER TABLE events ADD COLUMN IF NOT EXISTS event_kind VARCHAR(20) NOT NULL DEFAULT 'internal';
-            """
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE events ADD COLUMN IF NOT EXISTS event_kind VARCHAR(20) NOT NULL DEFAULT 'internal';
+                """
+            )
         )
-    )
 
 
 def downgrade() -> None:

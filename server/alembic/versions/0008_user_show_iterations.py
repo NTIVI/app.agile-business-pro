@@ -16,14 +16,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        sa.text(
-            """
-            ALTER TABLE users
-            ADD COLUMN IF NOT EXISTS show_iterations BOOLEAN NOT NULL DEFAULT false
-            """
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS show_iterations BOOLEAN NOT NULL DEFAULT false
+                """
+            )
         )
-    )
 
 
 def downgrade() -> None:
