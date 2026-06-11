@@ -28,7 +28,11 @@ class Settings(BaseSettings):
         if v:
             return v
         async_url = info.data.get("DATABASE_URL", "")
-        return async_url.replace("postgresql+asyncpg://", "postgresql://") if async_url else v
+        if not async_url:
+            return v
+        sync_url = async_url.replace("postgresql+asyncpg://", "postgresql://")
+        sync_url = sync_url.replace("sqlite+aiosqlite://", "sqlite://")
+        return sync_url
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
     
