@@ -76,6 +76,10 @@ export default function OwnerDashboard() {
   
   // UI Tabs State
   const [activeTab, setActiveTab] = useState<'dashboard' | 'kpis' | 'departments' | 'satisfaction' | 'interns' | 'integrations' | 'audit'>('dashboard');
+  const [internToAccept, setInternToAccept] = useState<string | null>(null);
+  const [acceptRole, setAcceptRole] = useState('user');
+  const [acceptDepartment, setAcceptDepartment] = useState('Разработка');
+  const [acceptManager, setAcceptManager] = useState('');
 
   // Interactive Data States
   const [employees, setEmployees] = useState<EmployeeKPI[]>([
@@ -424,9 +428,59 @@ export default function OwnerDashboard() {
 
   const handleFinishInternship = (id: string, inStaff: boolean) => {
     const intern = employees.find(e => e.id === id);
+    if (inStaff) {
+      setInternToAccept(id);
+      setAcceptRole('user');
+      setAcceptDepartment('Разработка');
+      const managers = employees.filter(e => !e.isIntern && e.id !== id);
+      setAcceptManager(managers[0]?.name || '');
+    } else {
+      setEmployees(prev => prev.map(e => {
+        if (e.id === id) {
+          return { ...e, isIntern: false, status: 'fired' };
+        }
+        return e;
+      }));
+
+      // Audit Log
+      const log: AuditLog = {
+        id: `aud-${Date.now()}`,
+        timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        actor: 'Владелец (Вы)',
+        action: 'Завершение стажировки',
+        target: intern?.name || 'Стажёр',
+        details: 'Отчислен по результатам обучения.'
+      };
+      setAuditLogs(prev => [log, ...prev]);
+      alert(`Стажировка завершена! Сотрудник отчислен с платформы.`);
+    }
+  };
+
+  const handleConfirmAcceptIntern = () => {
+    if (!internToAccept) return;
+    const intern = employees.find(e => e.id === internToAccept);
+    if (!acceptDepartment) {
+      alert("Выберите отдел!");
+      return;
+    }
+    if (!acceptRole) {
+      alert("Выберите должность!");
+      return;
+    }
+    if (!acceptManager) {
+      alert("Выберите руководителя!");
+      return;
+    }
+
     setEmployees(prev => prev.map(e => {
-      if (e.id === id) {
-        return { ...e, isIntern: false, status: inStaff ? 'active' : 'fired' };
+      if (e.id === internToAccept) {
+        return {
+          ...e,
+          isIntern: false,
+          status: 'active',
+          department: acceptDepartment,
+          role: acceptRole === 'user' ? 'Сотрудник' : acceptRole === 'consultant' ? 'Консультант' : acceptRole
+        };
       }
       return e;
     }));
@@ -438,10 +492,11 @@ export default function OwnerDashboard() {
       actor: 'Владелец (Вы)',
       action: 'Завершение стажировки',
       target: intern?.name || 'Стажёр',
-      details: inStaff ? 'Переведен в штат компании.' : 'Отчислен по результатам обучения.'
+      details: `Переведен в штат. Отдел: ${acceptDepartment}, Должность: ${acceptRole === 'user' ? 'Сотрудник' : acceptRole}, Руководитель: ${acceptManager}`
     };
     setAuditLogs(prev => [log, ...prev]);
-    alert(`Стажировка завершена! Сотрудник ${inStaff ? 'принят в штат' : 'отчислен с платформы'}.`);
+    alert(`Стажировка завершена! Сотрудник ${intern?.name} принят в штат (Отдел: ${acceptDepartment}, Должность: ${acceptRole}).`);
+    setInternToAccept(null);
   };
 
   const handleToggleBlockUser = (id: string) => {
@@ -940,7 +995,7 @@ export default function OwnerDashboard() {
                   <tr>
                     <th>Проект</th>
                     <th>Оценка заказчика</th>
-                    <th>Отзыв клиента</th>
+                    <th>Комментарий клиента</th>
                     <th>Участники команды (веса)</th>
                     <th>Дата оценки</th>
                   </tr>
@@ -1285,23 +1340,21 @@ export default function OwnerDashboard() {
               </div>
               <div className="formGroup">
                 <label>Оценка заказчика (1-5):</label>
-                <select 
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="5"
                   className={styles.formInput}
                   value={newSatisfaction.rating}
-                  onChange={e => setNewSatisfaction(prev => ({ ...prev, rating: parseInt(e.target.value) || 5 }))}
-                >
-                  <option value="5">5 звезд (Отлично)</option>
-                  <option value="4">4 звезды (Хорошо)</option>
-                  <option value="3">3 звезды (Удовлетворительно)</option>
-                  <option value="2">2 звезды (Плохо)</option>
-                  <option value="1">1 звезда (Ужасно)</option>
-                </select>
+                  onChange={e => setNewSatisfaction(prev => ({ ...prev, rating: Math.max(1, Math.min(5, parseInt(e.target.value) || 5)) }))}
+                  required
+                />
               </div>
               <div className="formGroup">
-                <label>Отзыв клиента (комментарий):</label>
+                <label>Комментарий клиента:</label>
                 <textarea 
                   className={styles.formInput}
-                  placeholder="Отзыв клиента на основе устной обратной связи..."
+                  placeholder="Комментарий клиента на основе устной обратной связи..."
                   value={newSatisfaction.comment}
                   onChange={e => setNewSatisfaction(prev => ({ ...prev, comment: e.target.value }))}
                   required
@@ -1371,6 +1424,67 @@ export default function OwnerDashboard() {
                 <button type="submit" className="btn btn-primary btn-sm">Добавить тип бонуса</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Popup: Intern Graduation / Acceptance details */}
+      {internToAccept && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Принятие сотрудника в штат</h3>
+              <button className={styles.closeBtn} onClick={() => setInternToAccept(null)}>&times;</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+              <div className="formGroup">
+                <label>Должность:</label>
+                <select 
+                  className={styles.formInput}
+                  value={acceptRole}
+                  onChange={e => setAcceptRole(e.target.value)}
+                >
+                  <option value="user">Сотрудник</option>
+                  <option value="consultant">Консультант</option>
+                  <option value="deputy_owner">Заместитель владельца</option>
+                  <option value="admin">Администратор</option>
+                </select>
+              </div>
+              <div className="formGroup">
+                <label>Отдел:</label>
+                <select 
+                  className={styles.formInput}
+                  value={acceptDepartment}
+                  onChange={e => setAcceptDepartment(e.target.value)}
+                >
+                  <option value="Разработка">Разработка</option>
+                  <option value="Маркетинг">Маркетинг</option>
+                  <option value="Дизайн">Дизайн</option>
+                  <option value="Продажи">Продажи</option>
+                  <option value="Аналитика">Аналитика</option>
+                  <option value="Бухгалтерия">Бухгалтерия</option>
+                  <option value="Кадры">Кадры</option>
+                  <option value="Управление">Управление</option>
+                </select>
+              </div>
+              <div className="formGroup">
+                <label>Руководитель:</label>
+                <select 
+                  className={styles.formInput}
+                  value={acceptManager}
+                  onChange={e => setAcceptManager(e.target.value)}
+                >
+                  <option value="">-- Выберите руководителя --</option>
+                  {employees.filter(e => !e.isIntern && e.id !== internToAccept).map(e => (
+                    <option key={e.id} value={e.name}>{e.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formActions} style={{ marginTop: '12px' }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setInternToAccept(null)}>Отмена</button>
+                <button type="button" className="btn btn-primary btn-sm" onClick={handleConfirmAcceptIntern}>Принять в штат</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

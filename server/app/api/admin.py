@@ -1,6 +1,7 @@
 # API администрирования
 import uuid
 import secrets
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -238,16 +239,18 @@ async def admin_stats(db: AsyncSession = Depends(get_db), admin: User = Depends(
     except Exception:
         pass
 
-    total_users = await db.execute(select(func.count(User.id)))
-    active_users = await db.execute(select(func.count(User.id)).where(User.status == UserStatus.ACTIVE))
-    pending_users = await db.execute(select(func.count(User.id)).where(User.status == UserStatus.PENDING))
-    total_projects = await db.execute(select(func.count(Project.id)).where(Project.is_deleted == False))
+    res_total, res_active, res_pending, res_projects = await asyncio.gather(
+        db.execute(select(func.count(User.id))),
+        db.execute(select(func.count(User.id)).where(User.status == UserStatus.ACTIVE)),
+        db.execute(select(func.count(User.id)).where(User.status == UserStatus.PENDING)),
+        db.execute(select(func.count(Project.id)).where(Project.is_deleted == False))
+    )
     
     result = {
-        "total_users": total_users.scalar(),
-        "active_users": active_users.scalar(),
-        "pending_users": pending_users.scalar(),
-        "total_projects": total_projects.scalar(),
+        "total_users": res_total.scalar(),
+        "active_users": res_active.scalar(),
+        "pending_users": res_pending.scalar(),
+        "total_projects": res_projects.scalar(),
     }
 
     try:

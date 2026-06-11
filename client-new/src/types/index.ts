@@ -31,6 +31,8 @@ export interface User {
   notify_events?: boolean;
   show_iterations?: boolean;
   totp_enabled?: boolean;
+  department_id?: string | null;
+  manager_id?: string | null;
 }
 
 export type UserRole = User['role'];

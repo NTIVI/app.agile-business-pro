@@ -45,7 +45,7 @@ import axios, { type AxiosError } from 'axios';
 import type { Project, Iteration, Task, User, ChatMessage, BoardColumn } from '../../types';
 import { TASK_STATUSES, TASK_PRIORITIES, SPHERES } from '../../types';
 import styles from './ProjectDetail.module.css';
-import { SubtasksPanel } from './ProjectViews';
+import { SubtasksPanel, ProjectGanttView, ProjectCalendarView } from './ProjectViews';
 
 function sameUserId(a: string | undefined, b: string | undefined): boolean {
   return String(a ?? '') === String(b ?? '');
@@ -100,7 +100,7 @@ export default function ProjectDetailPage() {
   const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<User[]>([]);
-  const [workspaceTab, setWorkspaceTab] = useState<'board'>('board');
+  const [workspaceTab, setWorkspaceTab] = useState<'board' | 'gantt' | 'calendar' | 'audit'>('board');
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [taskDetailTab, setTaskDetailTab] = useState<'chat' | 'info' | 'desc' | 'sub'>('chat');
   const [descDraft, setDescDraft] = useState('');
@@ -1600,6 +1600,33 @@ export default function ProjectDetailPage() {
                   <span>{lang.workspace.board}</span>
                 </button>
 
+                <button
+                  type="button"
+                  className={`${styles.viewPill} ${workspaceTab === 'gantt' ? styles.viewPillActive : ''}`}
+                  onClick={() => setWorkspaceTab('gantt')}
+                >
+                  <BarChart3 size={15} />
+                  <span>Гант</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.viewPill} ${workspaceTab === 'calendar' ? styles.viewPillActive : ''}`}
+                  onClick={() => setWorkspaceTab('calendar')}
+                >
+                  <CalendarDays size={15} />
+                  <span>Календарь</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.viewPill} ${workspaceTab === 'audit' ? styles.viewPillActive : ''}`}
+                  onClick={() => setWorkspaceTab('audit')}
+                >
+                  <FileText size={15} />
+                  <span>История действий</span>
+                </button>
+
               </div>
 
               <button
@@ -1944,6 +1971,56 @@ export default function ProjectDetailPage() {
                   );
                 })()}
 
+                {workspaceTab === 'gantt' && selectedIteration && (
+                  <ProjectGanttView
+                    tasks={filteredTasks}
+                    iterationName={selectedIteration.name}
+                    lang={lang}
+                    language={language}
+                  />
+                )}
+
+                {workspaceTab === 'calendar' && (
+                  <ProjectCalendarView
+                    tasks={filteredTasks}
+                    lang={lang}
+                    language={language}
+                  />
+                )}
+
+                {workspaceTab === 'audit' && (
+                  <div style={{ padding: '24px', overflowY: 'auto', maxHeight: '70vh' }}>
+                    <h3 style={{ marginBottom: '16px', color: 'var(--color-text)' }}>История изменений и лог аудита проекта</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {(() => {
+                        const allHistory = tasks
+                          .filter(t => t.history && t.history.length > 0)
+                          .flatMap(t => t.history!.map(h => ({
+                            ...h,
+                            taskTitle: t.title,
+                          })))
+                          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+                        if (allHistory.length === 0) {
+                          return <p style={{ color: 'var(--color-text-secondary)' }}>История действий пока пуста.</p>;
+                        }
+
+                        return allHistory.map((h, idx) => (
+                          <div key={idx} style={{ padding: '12px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'rgba(255,255,255,0.01)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                              <span><strong>{h.user_name || 'Система'}</strong></span>
+                              <span>{new Date(h.created_at).toLocaleString()}</span>
+                            </div>
+                            <div style={{ fontSize: '14px', color: 'var(--color-text)' }}>
+                              В задаче <span style={{ textDecoration: 'underline' }}>{h.taskTitle}</span> изменено поле <strong>{h.field}</strong>:
+                              {h.old_value && <span> с <em>"{h.old_value}"</em></span>} на <strong>"{h.new_value}"</strong>
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                )}
 
               </div>
 

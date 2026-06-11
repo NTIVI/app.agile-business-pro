@@ -21,7 +21,7 @@ export default function AdminPage() {
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<{ total_users: number; active_users: number; pending_users: number; total_projects: number } | null>(null);
   const [editUser, setEditUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'user', training_role: '' as string });
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'user', training_role: '' as string, department_id: '', manager_id: '' });
 
   // Fire popup
   const [fireTarget, setFireTarget] = useState<User | null>(null);
@@ -147,13 +147,38 @@ export default function AdminPage() {
 
   const openEdit = (u: User) => {
     setEditUser(u);
-    setEditForm({ name: u.name, email: u.email, role: u.role, training_role: u.training_role || '' });
+    setEditForm({
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      training_role: u.training_role || '',
+      department_id: u.department_id || '',
+      manager_id: u.manager_id || '',
+    });
   };
 
   const saveEdit = async (e: FormEvent) => {
     e.preventDefault();
     if (!editUser) return;
-    const payload = { ...editForm, training_role: editForm.training_role || null };
+
+    // Enforce selecting department and manager when accepting a person (moving from intern role to staff)
+    if (editForm.role !== 'intern' && editUser.role === 'intern') {
+      if (!editForm.department_id) {
+        alert("При принятии сотрудника после стажировки необходимо выбрать отдел!");
+        return;
+      }
+      if (!editForm.manager_id) {
+        alert("При принятии сотрудника после стажировки необходимо выбрать руководителя!");
+        return;
+      }
+    }
+
+    const payload = {
+      ...editForm,
+      training_role: editForm.training_role || null,
+      department_id: editForm.department_id || null,
+      manager_id: editForm.manager_id || null,
+    };
     await api.put(`/admin/users/${editUser.id}`, payload);
     setEditUser(null);
     loadAll();
@@ -373,6 +398,7 @@ export default function AdminPage() {
             <form onSubmit={saveEdit} className={styles.form}>
               <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder={lang.admin.name} required />
               <input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} placeholder="Email" type="email" required />
+              <label style={{ fontSize: '13px', display: 'block', marginTop: '8px', color: 'var(--color-text-secondary)' }}>Роль на платформе</label>
               <select value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })}>
                 <option value="user">{lang.roles.user}</option>
                 <option value="intern">{lang.roles.intern}</option>
@@ -381,10 +407,30 @@ export default function AdminPage() {
                 <option value="owner">{lang.roles.owner}</option>
                 <option value="deputy_owner">{lang.roles.deputy_owner}</option>
               </select>
+              <label style={{ fontSize: '13px', display: 'block', marginTop: '8px', color: 'var(--color-text-secondary)' }}>Роль в обучении</label>
               <select value={editForm.training_role} onChange={e => setEditForm({ ...editForm, training_role: e.target.value })}>
                 <option value="">{(lang.training as Record<string, string>).noRole}</option>
                 <option value="intern">{(lang.training as Record<string, string>).intern}</option>
                 <option value="training_editor">{(lang.training as Record<string, string>).trainingEditor}</option>
+              </select>
+              <label style={{ fontSize: '13px', display: 'block', marginTop: '8px', color: 'var(--color-text-secondary)' }}>Отдел</label>
+              <select value={editForm.department_id} onChange={e => setEditForm({ ...editForm, department_id: e.target.value })}>
+                <option value="">-- Выберите отдел --</option>
+                <option value="Разработка">Разработка</option>
+                <option value="Маркетинг">Маркетинг</option>
+                <option value="Дизайн">Дизайн</option>
+                <option value="Продажи">Продажи</option>
+                <option value="Аналитика">Аналитика</option>
+                <option value="Бухгалтерия">Бухгалтерия</option>
+                <option value="Кадры">Кадры</option>
+                <option value="Управление">Управление</option>
+              </select>
+              <label style={{ fontSize: '13px', display: 'block', marginTop: '8px', color: 'var(--color-text-secondary)' }}>Руководитель</label>
+              <select value={editForm.manager_id} onChange={e => setEditForm({ ...editForm, manager_id: e.target.value })}>
+                <option value="">-- Выберите руководителя --</option>
+                {users.filter(u => u.id !== editUser.id && u.role !== 'intern' && u.status === 'active').map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
               </select>
               <div className={styles.formActions}>
                 <button type="button" className="btn btn-secondary" onClick={() => setEditUser(null)}>{lang.common.cancel}</button>

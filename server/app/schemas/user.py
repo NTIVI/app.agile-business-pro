@@ -107,6 +107,8 @@ class UserOut(BaseModel):
     section_access: Optional[list[str]] = None
     show_iterations: bool = False
     totp_enabled: bool = False
+    manager_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
     sphere_roles: list[SphereRoleOut] = []
     created_at: datetime
 
@@ -187,3 +189,5 @@ class AdminUserUpdate(BaseModel):
     city: Optional[str] = None
     fire_message: Optional[str] = None
     training_role: Optional[str] = None
+    manager_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
