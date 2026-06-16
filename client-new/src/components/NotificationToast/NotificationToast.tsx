@@ -11,10 +11,7 @@ interface Toast {
 }
 
 const POLL_INTERVAL = 15000;
-const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-const WS_BASE = isLocal
-  ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`
-  : 'wss://app-agile-business-pro.onrender.com';
+const WS_BASE = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
 export default function NotificationToast() {
   const { user } = useAppSelector(s => s.auth);

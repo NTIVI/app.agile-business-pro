@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, FolderInput, ListTodo, ChevronsLeftRight, MoreHorizontal, Pencil, Trash2, Archive, ChevronDown, FileText, Video } from 'lucide-react';
+import { Plus, FolderInput, ListTodo, ChevronsLeftRight, MoreHorizontal, Pencil, Trash2, Archive, ChevronDown, FileText, Video, Wallet } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { toggleMobileMenu, toggleSidebarNarrow } from '../../store/slices/uiSlice';
 import { t } from '../../i18n';
@@ -77,6 +77,9 @@ const iconMap: Record<string, () => JSX.Element> = {
   profile: UserIcon,
   myProfile: UserIcon,
   myCompany: BuildingIcon,
+  finance: () => (
+    <span className={styles.icon} aria-hidden><Wallet size={18} strokeWidth={1.75} /></span>
+  ),
 };
 
 const topNavItems = [
@@ -88,6 +91,7 @@ const topNavItems = [
 const secondaryNavItems = [
   { path: '/leaderboard', key: 'leaderboard' as const },
   { path: '/events', key: 'events' as const },
+  { path: '/finance', key: 'finance' as const },
   { path: '/training', key: 'training' as const, children: [
     { path: '/assessment', key: 'assessment' as const },
     { path: '/competency', key: 'competency' as const },
@@ -563,8 +567,8 @@ export default function Sidebar() {
           <div className={styles.navDivider} />
 
           {secondaryNavItems.map(item => {
-            // Section access filtering: admin sees all; non-admin needs section_access grant for assessment/competency
-            const restrictedSections = ['assessment', 'competency'];
+            // Section access filtering: admin sees all; non-admin needs section_access grant for assessment/competency/finance
+            const restrictedSections = ['assessment', 'competency', 'finance'];
             const isAdmin = ['admin', 'owner', 'deputy_owner'].includes(user.role);
             if (!isAdmin && restrictedSections.includes(item.key) && !(user.section_access || []).includes(item.key)) return null;
 
@@ -583,16 +587,19 @@ export default function Sidebar() {
                     aria-label={navLabel(item.key)}
                     title={navLabel(item.key)}
                   >
-                    <span className={styles.icon} aria-hidden="true"><Icon /></span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+                      <span className={styles.icon} aria-hidden="true"><Icon /></span>
+                      {visibleChildren.length > 0 && (
+                        <span
+                          className={`${styles.chevron} ${trainingOpen ? styles.chevronOpen : ''}`}
+                          onClick={e => { e.stopPropagation(); setTrainingOpen(v => !v); }}
+                          style={{ margin: '4px 0 0 0', padding: 0 }}
+                        >
+                          <ChevronDown size={14} />
+                        </span>
+                      )}
+                    </div>
                     <span className={styles.label}>{navLabel(item.key)}</span>
-                    {visibleChildren.length > 0 && (
-                    <span
-                      className={`${styles.chevron} ${trainingOpen ? styles.chevronOpen : ''}`}
-                      onClick={e => { e.stopPropagation(); setTrainingOpen(v => !v); }}
-                    >
-                      <ChevronDown size={14} />
-                    </span>
-                    )}
                   </button>
                   {trainingOpen && visibleChildren.map(child => {
                     const CIcon = iconMap[child.key];
@@ -703,7 +710,10 @@ export default function Sidebar() {
               {sidebarNarrow ? lang.sidebar.railExpand : lang.sidebar.railCollapse}
             </span>
           </button>
-          <span className={styles.workspaceBadge}>{lang.sidebar.workspace}</span>
+          <div className={styles.agileLogoFooter}>
+            <span className={styles.agileLogoRed}>agile</span>{' '}
+            <span className={styles.agileLogoWhite}>Business</span>
+          </div>
         </div>
       </aside>
 

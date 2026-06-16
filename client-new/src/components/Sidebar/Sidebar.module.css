@@ -477,6 +477,34 @@
   padding: 4px 2px 0;
 }
 
+.agileLogoFooter {
+  display: block;
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+  padding: 4px 2px 0;
+  text-transform: none;
+  font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+.agileLogoRed {
+  color: #ef4444;
+  text-shadow: 
+    -1.5px -1.5px 0 #000,  
+     1.5px -1.5px 0 #000,
+    -1.5px  1.5px 0 #000,
+     1.5px  1.5px 0 #000;
+}
+
+.agileLogoWhite {
+  color: #ffffff;
+  text-shadow: 
+    -1.5px -1.5px 0 #000,  
+     1.5px -1.5px 0 #000,
+    -1.5px  1.5px 0 #000,
+     1.5px  1.5px 0 #000;
+}
+
 /* —— Messenger (YouGile-style) —— */
 .messengerBlock {
   margin-top: 4px;
@@ -548,7 +576,8 @@
   .sidebar.sidebarNarrow .messengerHint,
   .sidebar.sidebarNarrow .personalChatsLabel,
   .sidebar.sidebarNarrow .railToggleLabel,
-  .sidebar.sidebarNarrow .workspaceBadge {
+  .sidebar.sidebarNarrow .workspaceBadge,
+  .sidebar.sidebarNarrow .agileLogoFooter {
     display: none;
   }
 

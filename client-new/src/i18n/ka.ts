@@ -22,6 +22,7 @@ const ka = {
     search: 'ძიება...',
     notifications: 'შეტყობინებები',
     applications: 'Applications',
+    finance: 'ფინანსური ანალიტიკა',
   },
   applications: {
     title: 'Applications',

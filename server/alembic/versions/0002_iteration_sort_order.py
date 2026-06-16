@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from alembic import op
+# pyrefly: ignore [missing-import]
 import sqlalchemy as sa
 
 revision = "0002_iter_sort"

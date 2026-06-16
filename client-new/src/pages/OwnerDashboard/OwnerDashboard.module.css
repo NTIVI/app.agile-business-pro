@@ -609,3 +609,498 @@
   opacity: 0.8;
   margin-top: 2px;
 }
+
+/* Clickable Rows */
+.clickableRow {
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.clickableRow:hover td {
+  background-color: rgba(99, 102, 241, 0.04) !important;
+}
+.clickableRow:active {
+  transform: scale(0.998);
+}
+
+/* Avatar details */
+.avatarMini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.empNameCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.empNameLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.empNameLink:hover {
+  text-decoration: underline;
+}
+
+/* Team KPI Summary Plate (Requirement 11) */
+.teamKpiPlate {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(236, 72, 153, 0.1) 100%);
+  border: 1.5px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.teamKpiLeft {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.teamKpiIconWrap {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--color-primary);
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+}
+.teamKpiLeft h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+.teamKpiLeft p {
+  font-size: 14.5px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  opacity: 0.95;
+}
+.teamKpiRight {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 300px;
+}
+.teamKpiValueSection {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.teamKpiNumber {
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--color-primary);
+  letter-spacing: -0.03em;
+}
+.teamKpiProgressWrap {
+  width: 100%;
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.teamKpiProgressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Manager KPI Taller Styling (Requirement 12) */
+.managerRowLarge td {
+  padding: 16px !important;
+}
+.managerKpiCell {
+  text-align: center;
+}
+.managerKpiCell strong {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+/* Employee Profile Large Modal Content */
+.modalContentLarge {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 800px;
+  padding: 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  position: relative;
+  max-height: 92vh;
+  overflow-y: auto;
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.avatarLarge {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.profileModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.profileTopRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.generalKpiBigCard {
+  flex: 1;
+  min-width: 180px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.bigKpiLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.bigKpiCircle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 6px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.bigKpiCircle strong {
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.bigKpiStatus {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.trendChartCard {
+  flex: 2;
+  min-width: 320px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+}
+
+/* 2-Week Checkpoint timeline styles (Requirement 11) */
+.checkpointSection {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.checkpointTimeline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin: 20px 0 24px 0;
+  padding: 0 20px;
+}
+
+.timelineLine {
+  position: absolute;
+  top: 18px;
+  left: 40px;
+  right: 40px;
+  height: 4px;
+  background: var(--color-border);
+  z-index: 1;
+}
+
+.checkpointNode {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.checkpointNode:hover {
+  transform: translateY(-2px);
+}
+
+.checkpointCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13.5px;
+  border: 3px solid var(--color-bg);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.checkpointNodeActive .checkpointCircle {
+  transform: scale(1.15);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.checkpointLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.checkpointDetailsBox {
+  background: rgba(99, 102, 241, 0.03);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+/* KPI Details Grid */
+.kpiDetailsGridSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailedKpiCardsWrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.detailedKpiCard {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detailedKpiHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detailedKpiIconTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detailedKpiIconTitle strong {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.detailedKpiProgress {
+  width: 100%;
+  height: 5px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.detailedKpiProgressBar {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.detailedKpiDesc {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.detailedKpiMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border-light);
+  padding-top: 6px;
+  margin-top: auto;
+}
+
+.kpiWarn {
+  color: #f59e0b;
+}
+
+/* Completed Tasks Section */
+.tasksSection {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.tasksListWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.taskItemRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.taskItemRow:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--color-border);
+}
+
+/* Quick Actions Redesign Subtabs */
+.quickActionsSubTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.subTabBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.subTabBtn:hover {
+  color: var(--color-primary);
+  background: var(--color-bg-tertiary);
+}
+
+.subTabActive {
+  color: var(--color-primary) !important;
+  background: var(--color-primary-light) !important;
+}
+
+.quickActionContent {
+  padding: 16px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  min-height: 80px;
+}
+
+/* Collapsible Section styles */
+.collapseIcon {
+  cursor: pointer;
+  transition: transform 0.2s;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.collapseIcon:hover {
+  color: var(--color-text);
+  background: var(--color-bg-tertiary);
+}
+
+.cardCollapsed {
+  padding-bottom: 12px !important;
+}
+
+/* Scaled up Customer Satisfaction Styles */
+.satisfactionTable {
+  composes: customTable;
+  font-size: 14.5px !important;
+}
+
+.satisfactionTable th {
+  padding: 14px 18px !important;
+  font-size: 14.5px !important;
+}
+
+.satisfactionTable td {
+  padding: 14px 18px !important;
+}
+
+.satisfactionCard {
+  composes: card;
+  padding: 24px !important;
+}
+

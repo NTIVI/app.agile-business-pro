@@ -515,18 +515,20 @@ export default function ProjectDetailPage() {
                 <span>{m.name}</span>
               </label>
             ))}
-            <button
-              type="button"
-              className={styles.ygStickerApplyBtn}
-              onClick={() => applyStickerAssignees(parentTask.id, stickerAssigneeIds)}
-            >
-              Применить
-            </button>
-            {(stickerAssigneeIds.length > 0 || getTaskAssigneeIds(parentTask).length > 0) && (
-              <button type="button" className={styles.ygColMenuDanger} onClick={() => applyStickerAssignees(parentTask.id, [])}>
-                <X size={14} /> Убрать
+            <div className={styles.ygStickerActionsRow}>
+              <button
+                type="button"
+                className={styles.ygStickerApplyBtn}
+                onClick={() => applyStickerAssignees(parentTask.id, stickerAssigneeIds)}
+              >
+                Применить
               </button>
-            )}
+              {(stickerAssigneeIds.length > 0 || getTaskAssigneeIds(parentTask).length > 0) && (
+                <button type="button" className={styles.ygStickerRemoveBtn} onClick={() => applyStickerAssignees(parentTask.id, [])}>
+                  Убрать
+                </button>
+              )}
+            </div>
           </>
         )}
         {stickerSub === 'deadline' && (
@@ -553,14 +555,16 @@ export default function ProjectDetailPage() {
                 />
               </label>
             </div>
-            <button type="button" className={styles.ygStickerApplyBtn} onClick={() => applyStickerDeadline(parentTask.id, stickerStartDate, stickerDeadline)} disabled={!stickerStartDate && !stickerDeadline}>
-              Применить
-            </button>
-            {(parentTask.start_date || parentTask.deadline) && (
-              <button type="button" className={styles.ygColMenuDanger} onClick={() => applyStickerDeadline(parentTask.id, '', '')}>
-                <X size={14} /> Убрать
+            <div className={styles.ygStickerActionsRow}>
+              <button type="button" className={styles.ygStickerApplyBtn} onClick={() => applyStickerDeadline(parentTask.id, stickerStartDate, stickerDeadline)} disabled={!stickerStartDate && !stickerDeadline}>
+                Применить
               </button>
-            )}
+              {(parentTask.start_date || parentTask.deadline) && (
+                <button type="button" className={styles.ygStickerRemoveBtn} onClick={() => applyStickerDeadline(parentTask.id, '', '')}>
+                  Убрать
+                </button>
+              )}
+            </div>
           </>
         )}
         {stickerSub === 'priority' && (
@@ -1151,10 +1155,7 @@ export default function ProjectDetailPage() {
   // Chat
   const loadChatMessages = useCallback(async (iid: string) => { setChatLoading(true); try { const { data } = await api.get(`/chat/${iid}/messages?limit=100`); setChatMessages(data); } catch {} setChatLoading(false); }, []);
   const connectWs = useCallback((iid: string) => {
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const wsUrl = isLocal
-      ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/chat/${iid}`
-      : `wss://app-agile-business-pro.onrender.com/ws/chat/${iid}`;
+    const wsUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat/${iid}`;
     const ws = new WebSocket(wsUrl);
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
@@ -1269,7 +1270,31 @@ export default function ProjectDetailPage() {
   }, [selectedIteration, loadChatMessages]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages]);
 
-  const sendChatMessage = (e: React.FormEvent) => { e.preventDefault(); if (!chatInput.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return; const payload: any = { content: chatInput.trim() }; if (replyTo) { payload.reply_to_id = replyTo.id; } wsRef.current.send(JSON.stringify(payload)); setChatInput(''); setReplyTo(null); setShowMentions(false); };
+  const sendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = chatInput.trim();
+    if (!text || !selectedIteration) return;
+    const payload: any = { content: text };
+    if (replyTo) {
+      payload.reply_to_id = replyTo.id;
+    }
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(payload));
+      setChatInput('');
+      setReplyTo(null);
+      setShowMentions(false);
+    } else {
+      try {
+        await api.post(`/chat/${selectedIteration.id}/messages`, payload);
+        setChatInput('');
+        setReplyTo(null);
+        setShowMentions(false);
+        void loadChatMessages(selectedIteration.id);
+      } catch (err) {
+        console.error("Failed to send chat message:", err);
+      }
+    }
+  };
   const sendTypingEvent = () => { if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) { wsRef.current.send(JSON.stringify({ type: 'typing' })); } };
   const editMessage = async (mid: string) => { if (!editMsgText.trim() || !selectedIteration) return; await api.put(`/chat/messages/${mid}`, { content: editMsgText }); setEditingMsg(null); setEditMsgText(''); loadChatMessages(selectedIteration.id); };
   const deleteMessage = async (mid: string) => { if (!selectedIteration) return; await api.delete(`/chat/messages/${mid}`); loadChatMessages(selectedIteration.id); };

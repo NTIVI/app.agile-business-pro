@@ -197,9 +197,6 @@ export default function EventsPage() {
             >
               {lang.events.notAttend}
             </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => openChat(ev.id)}>
-              {lang.chat.title}
-            </button>
             <label className="btn btn-sm btn-ghost" style={{ cursor: 'pointer' }}>
               <Camera size={16} />
               <input type="file" accept="image/*" hidden onChange={e => uploadEventPhoto(ev.id, e)} />

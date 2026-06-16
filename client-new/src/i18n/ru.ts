@@ -23,6 +23,7 @@ const ru = {
     search: 'Поиск...',
     notifications: 'Уведомления',
     applications: 'Заявки',
+    finance: 'Финансовая аналитика',
   },
   applications: {
     title: 'Заявки',

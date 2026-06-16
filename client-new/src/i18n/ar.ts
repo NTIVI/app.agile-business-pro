@@ -22,6 +22,7 @@ const ar = {
     search: 'بحث...',
     notifications: 'الإشعارات',
     applications: 'الطلبات',
+    finance: 'التحليلات المالية',
   },
   applications: {
     title: 'Applications',

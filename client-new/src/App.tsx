@@ -25,6 +25,7 @@ const KPIPage = lazy(() => import('./pages/KPI/KPI'));
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard/Leaderboard'));
 const ApplicationsPage = lazy(() => import('./pages/Applications/Applications'));
 const ApplicationDetailPage = lazy(() => import('./pages/Applications/ApplicationDetail'));
+const FinancePage = lazy(() => import('./pages/Finance/Finance'));
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAppSelector(s => s.auth);
@@ -147,6 +148,7 @@ export default function App() {
           <Route path="places" element={<Suspense fallback={<Spinner />}><InternGuard><PlacesPage /></InternGuard></Suspense>} />
           <Route path="music" element={<Suspense fallback={<Spinner />}><InternGuard><MusicPage /></InternGuard></Suspense>} />
           <Route path="analytics" element={<Suspense fallback={<Spinner />}><InternGuard><AnalyticsPage /></InternGuard></Suspense>} />
+          <Route path="finance" element={<Suspense fallback={<Spinner />}><InternGuard><FinancePage /></InternGuard></Suspense>} />
           <Route path="shop" element={<Suspense fallback={<Spinner />}><InternGuard><ShopPage /></InternGuard></Suspense>} />
           <Route path="kpi" element={<Suspense fallback={<Spinner />}><KPIPage /></Suspense>} />
           <Route path="leaderboard" element={<Suspense fallback={<Spinner />}><LeaderboardPage /></Suspense>} />

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle2, Bot, X, Timer, Activity, Brain, Coins, ShoppingBag, Award, Shield, ShieldOff } from 'lucide-react';
+import { CheckCircle2, Bot, X, Timer, Activity, Brain, Coins, Award, Shield, ShieldOff } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { fetchMe } from '../../store/slices/authSlice';
 import { t } from '../../i18n';
 import api from '../../api/client';
-import { gamificationApi, type UserKPI, type ShopPurchase, type Achievement, type EquippedItem } from '../../api/gamification';
+import { gamificationApi, type UserKPI } from '../../api/gamification';
 import styles from './Profile.module.css';
 
-type Tab = 'personal' | 'kpi' | 'security' | 'purchases';
+type Tab = 'personal' | 'kpi' | 'security';
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -23,9 +23,6 @@ export default function ProfilePage() {
   const [msg, setMsg] = useState('');
   const [pwMsg, setPwMsg] = useState('');
   const [kpi, setKpi] = useState<UserKPI | null>(null);
-  const [purchases, setPurchases] = useState<ShopPurchase[]>([]);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [equipped, setEquipped] = useState<EquippedItem[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -57,21 +54,7 @@ export default function ProfilePage() {
     return () => window.clearInterval(id);
   }, [user]);
 
-  useEffect(() => {
-    if (tab === 'purchases') {
-      Promise.all([
-        gamificationApi.getMyPurchases(),
-        gamificationApi.getAchievements(),
-        gamificationApi.getEquipped(),
-      ])
-        .then(([p, a, e]) => {
-          setPurchases(p.data);
-          setAchievements(a.data);
-          setEquipped(e.data);
-        })
-        .catch(() => {});
-    }
-  }, [tab]);
+
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +105,6 @@ export default function ProfilePage() {
     { key: 'personal', label: lang.profile.tabPersonal },
     { key: 'kpi', label: lang.nav.kpi || 'KPI' },
     { key: 'security', label: lang.profile.tabSecurity },
-    { key: 'purchases', label: lang.profile.tabPurchases },
   ];
 
   return (
@@ -293,60 +275,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Tab: Purchases */}
-      {tab === 'purchases' && (
-        <div className={styles.tabContent}>
-          {equipped.length > 0 && (
-            <div className={styles.section}>
-              <h3>Экипированные предметы</h3>
-              <div className={styles.purchaseList}>
-                {equipped.map((e) => (
-                  <div key={e.purchase_id} className={styles.purchaseCard}>
-                    <Award size={18} />
-                    <div>
-                      <strong>{e.item_title}</strong>
-                      <span>{e.category} · {e.rarity}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {purchases.length === 0 ? (
-            <p style={{ color: 'var(--color-text-muted)' }}>{lang.profile.noPurchases}</p>
-          ) : (
-            <div className={styles.purchaseList}>
-              {purchases.map(p => (
-                <div key={p.id} className={styles.purchaseCard}>
-                  <ShoppingBag size={18} />
-                  <div>
-                    <strong>{p.item_title}</strong>
-                    <span>{p.price_paid} Agile.Coins · {new Date(p.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {achievements.length > 0 && (
-            <div className={styles.section}>
-              <h3>{lang.profile.achievements}</h3>
-              <div className={styles.kpiGrid}>
-                {achievements.map((a) => (
-                  <div key={a.id} className={styles.kpiCard}>
-                    <Award size={16} />
-                    <div>
-                      <strong>{a.title}</strong>
-                      <span>{a.rarity} · Lv.{a.level} · {a.progress}/{a.target}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

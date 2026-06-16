@@ -22,6 +22,7 @@ const en = {
     search: 'Search...',
     notifications: 'Notifications',
     applications: 'Applications',
+    finance: 'Financial Analytics',
   },
   applications: {
     title: 'Applications',

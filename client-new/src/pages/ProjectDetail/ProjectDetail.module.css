@@ -2161,18 +2161,22 @@
   min-width: 300px;
   max-width: min(380px, calc(100vw - 24px));
   max-height: min(70vh, 480px);
-  overflow-y: auto;
+  overflow: hidden !important;
   background: var(--color-surface);
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-md);
   box-shadow: 0 14px 36px var(--color-shadow);
-  padding: 10px;
+  padding: 12px;
+  scrollbar-width: none !important;
+}
+.ygStickerMenuPortal::-webkit-scrollbar {
+  display: none !important;
 }
 .ygStickerMenuTitle {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--color-text-secondary);
-  padding: 4px 12px 6px;
+  padding: 6px 12px 8px;
 }
 .ygStickerCheckboxRow {
   display: flex;
@@ -2240,45 +2244,76 @@
 
 .ygStickerFieldLabel {
   display: grid;
-  gap: 4px;
-  font-size: 0.74rem;
+  gap: 6px;
+  font-size: 1.0rem !important;
   color: var(--color-text-secondary);
 }
 
 .ygStickerDateInput {
   width: 100%;
   margin: 0;
-  padding: 6px 8px;
+  padding: 8px 10px !important;
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 0.82rem;
+  font-size: 1.05rem !important;
   font-family: var(--font-sans);
   outline: none;
 }
 .ygStickerDateInput:focus {
   border-color: var(--color-primary);
 }
+.ygStickerActionsRow {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 8px 8px 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
 .ygStickerApplyBtn {
-  width: calc(100% - 16px);
-  margin: 4px 8px 2px;
-  padding: 6px 0;
+  width: 110px;
+  padding: 8px 12px !important;
   border: none;
   border-radius: var(--radius-sm);
-  background: #dc2626 !important; /* Vibrant Red */
-  color: #fff;
-  font-size: 0.82rem;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  font-size: 1.0rem !important;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
 }
 .ygStickerApplyBtn:hover:not(:disabled) {
-  background: #b91c1c !important; /* Darker Red */
+  background: #b91c1c !important;
 }
 .ygStickerApplyBtn:disabled {
   opacity: 0.5;
   cursor: default;
+}
+.ygStickerRemoveBtn {
+  width: 110px;
+  padding: 8px 12px !important;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary) !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 1.0rem !important;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+}
+.ygStickerRemoveBtn:hover {
+  background: var(--color-bg-tertiary) !important;
+  color: var(--color-text) !important;
 }
 
 .ygNestProgress {
@@ -2583,10 +2618,10 @@
 
 .rightChatPanel {
   position: fixed;
-  top: var(--header-height);
+  top: 0;
   right: 0;
   bottom: 0;
-  z-index: 102;
+  z-index: 10050;
   display: flex;
   flex-direction: row;
   align-items: stretch;
@@ -2613,48 +2648,50 @@
 }
 
 .rightChatInner {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   height: 100%;
-  overflow: hidden;
 }
 
 .chatEdgeToggle {
-  flex: 0 0 26px;
-  width: 26px;
-  min-width: 26px;
-  padding: 0;
-  margin: 0;
-  border: none;
-  border-right: 1px solid var(--color-border);
-  border-radius: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: -16px;
+  width: 16px;
+  height: 48px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-right: none;
+  border-radius: 6px 0 0 6px;
   cursor: pointer;
-  background: color-mix(in srgb, var(--color-bg-secondary) 92%, var(--color-border));
-  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: background 0.15s, color 0.15s;
+  box-shadow: -4px 0 8px var(--color-shadow);
 }
-
 .chatEdgeToggle:hover,
 .chatEdgeToggle:focus-visible {
-  background: var(--color-bg-tertiary);
   color: var(--color-text);
+  background: var(--color-bg-secondary);
   outline: none;
 }
 
 :global([dir='rtl']) .chatEdgeToggle {
-  border-right: none;
-  border-left: 1px solid var(--color-border);
+  right: -16px;
+  left: auto;
+  border-right: 1px solid var(--color-border);
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  box-shadow: 4px 0 8px var(--color-shadow);
 }
 
 .chatExpandStrip {
   position: fixed;
-  z-index: 103;
+  z-index: 10051;
   top: 50%;
   transform: translateY(-50%);
   right: 0;
